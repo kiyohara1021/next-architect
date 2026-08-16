@@ -1,0 +1,42 @@
+{
+  "name": "next-architect",
+  "version": "0.1.0",
+  "description": "Architecture intelligence for Next.js applications",
+  "type": "module",
+  "bin": {
+    "next-architect": "./dist/bin.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@next-architect/cli": "workspace:*",
+    "@next-architect/core": "workspace:*"
+  },
+  "keywords": [
+    "nextjs",
+    "architecture",
+    "static-analysis",
+    "app-router",
+    "use-client"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kiyohara1021/next-architect"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

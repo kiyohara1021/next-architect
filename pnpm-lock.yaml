@@ -18,6 +18,24 @@ importers:
         specifier: ^3.0.8
         version: 3.2.7(@types/node@22.20.1)
 
+  packages/cli:
+    dependencies:
+      '@next-architect/core':
+        specifier: workspace:*
+        version: link:../core
+      '@next-architect/graph':
+        specifier: workspace:*
+        version: link:../graph
+      '@next-architect/parser':
+        specifier: workspace:*
+        version: link:../parser
+      '@next-architect/reporters':
+        specifier: workspace:*
+        version: link:../reporters
+      '@next-architect/rules':
+        specifier: workspace:*
+        version: link:../rules
+
   packages/core: {}
 
   packages/graph:
@@ -35,6 +53,15 @@ importers:
         specifier: workspace:*
         version: link:../core
 
+  packages/next-architect:
+    dependencies:
+      '@next-architect/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@next-architect/core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/parser:
     dependencies:
       '@next-architect/core':
@@ -43,6 +70,12 @@ importers:
       typescript:
         specifier: ^5.8.2
         version: 5.9.3
+
+  packages/reporters:
+    dependencies:
+      '@next-architect/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/rules:
     dependencies:

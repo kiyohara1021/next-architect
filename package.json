@@ -12,7 +12,8 @@
     "build": "pnpm -r run build",
     "test": "pnpm -r run test",
     "typecheck": "pnpm -r run typecheck",
-    "clean": "pnpm -r exec rm -rf dist"
+    "clean": "pnpm -r exec rm -rf dist",
+    "next-architect": "node packages/next-architect/dist/bin.js"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",
