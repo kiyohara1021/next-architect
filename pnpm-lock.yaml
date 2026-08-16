@@ -20,11 +20,29 @@ importers:
 
   packages/core: {}
 
+  packages/graph:
+    dependencies:
+      '@next-architect/core':
+        specifier: workspace:*
+        version: link:../core
+      '@next-architect/parser':
+        specifier: workspace:*
+        version: link:../parser
+
   packages/mcp:
     dependencies:
       '@next-architect/core':
         specifier: workspace:*
         version: link:../core
+
+  packages/parser:
+    dependencies:
+      '@next-architect/core':
+        specifier: workspace:*
+        version: link:../core
+      typescript:
+        specifier: ^5.8.2
+        version: 5.9.3
 
 packages:
 
