@@ -1,0 +1,26 @@
+{
+  "ruleId": "ARCH005",
+  "description": "Local synthetic App Router corpus for ARCH005 false-positive gate (docs/09–10).",
+  "cases": [
+    {
+      "id": "sequential-waterfall",
+      "expectation": "should-report",
+      "notes": "Independent await after a dependent chain — classic request waterfall candidate"
+    },
+    {
+      "id": "dependent-awaits",
+      "expectation": "should-not-report",
+      "notes": "Later await references prior binding (user.id) — true serial dependency, no ARCH005"
+    },
+    {
+      "id": "promise-all",
+      "expectation": "should-not-report",
+      "notes": "Independent fetches already parallelized via Promise.all — single await, no waterfall"
+    },
+    {
+      "id": "mutating-side-effect",
+      "expectation": "should-not-report",
+      "notes": "Mutating call-name prefix (create/update/…) excluded by D3 — must not FP"
+    }
+  ]
+}

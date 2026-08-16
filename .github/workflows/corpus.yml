@@ -1,0 +1,46 @@
+name: Corpus gates
+
+# The false-positive gates are the v0.1 release condition (docs/09–10), so they
+# run on every pull request rather than only before a release.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: corpus-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - name: ARCH001-005 false-positive gates + smoke
+        run: |
+          pnpm corpus:arch001
+          pnpm corpus:arch002
+          pnpm corpus:arch003
+          pnpm corpus:arch004
+          pnpm corpus:arch005
+          pnpm corpus:smoke
+
+      # Separate step so a timing regression is distinguishable from a rule
+      # regression in the run summary.
+      - name: 1k-module performance gate
+        run: pnpm corpus:perf

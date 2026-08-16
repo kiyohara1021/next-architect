@@ -1,0 +1,9 @@
+{
+  "description": "Pinned hand-written Next.js App Router mini-app smoke (docs/09 real-project signal without cloning).",
+  "root": "mini-app",
+  "assert": {
+    "plantedFile": "components/PlantedUnnecessary.tsx",
+    "minArch001OnPlanted": 1,
+    "mustNotReportArch001": ["components/KnownGoodCounter.tsx"]
+  }
+}

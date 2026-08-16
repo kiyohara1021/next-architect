@@ -1,0 +1,36 @@
+{
+  "ruleId": "ARCH002",
+  "description": "Local synthetic App Router corpus for ARCH002 false-positive gate (docs/09–10).",
+  "cases": [
+    {
+      "id": "db-from-client",
+      "expectation": "should-report",
+      "notes": "Client reaches pg via product → database — classic Client Boundary Pollution"
+    },
+    {
+      "id": "client-imports-shared",
+      "expectation": "should-not-report",
+      "notes": "Client imports shared util (no server-oriented deps) — must not FP"
+    },
+    {
+      "id": "barrel-db-leak",
+      "expectation": "should-report",
+      "notes": "Client reaches pg module via barrel named re-export (no sideEffects:false → direct)"
+    },
+    {
+      "id": "unresolved-import",
+      "expectation": "should-not-report",
+      "notes": "Unresolved import — must stay silent (docs/03)"
+    },
+    {
+      "id": "weak-filename-only",
+      "expectation": "should-not-report",
+      "notes": "Borderline: path suggests db but no strong server signal — weak alone must not report"
+    },
+    {
+      "id": "server-only-defers",
+      "expectation": "should-not-report",
+      "notes": "Borderline: server-only leak is ARCH003-only — ARCH002 must stay silent (docs/05)"
+    }
+  ]
+}

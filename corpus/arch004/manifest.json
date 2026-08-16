@@ -1,0 +1,31 @@
+{
+  "ruleId": "ARCH004",
+  "description": "Local synthetic App Router corpus for ARCH004 false-positive gate (docs/09–10).",
+  "cases": [
+    {
+      "id": "large-client-dep",
+      "expectation": "should-report",
+      "notes": "Client Component imports vendor package >100KB unpacked — classic large client dep"
+    },
+    {
+      "id": "transitive-large-dep",
+      "expectation": "should-report",
+      "notes": "Client Component reaches a >100KB package through a shared lib module — the path is the point of the rule"
+    },
+    {
+      "id": "small-ok-dep",
+      "expectation": "should-not-report",
+      "notes": "Client imports tiny vendor package under threshold — must not FP"
+    },
+    {
+      "id": "server-large-dep",
+      "expectation": "should-not-report",
+      "notes": "Large dep only on Server Component import path + legitimate client sibling — no ARCH004"
+    },
+    {
+      "id": "unresolved-import",
+      "expectation": "should-not-report",
+      "notes": "Unresolved package import — must stay silent (docs/03)"
+    }
+  ]
+}

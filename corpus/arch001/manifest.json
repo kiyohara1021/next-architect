@@ -1,0 +1,46 @@
+{
+  "ruleId": "ARCH001",
+  "description": "Local synthetic App Router corpus for ARCH001 false-positive gate (docs/09–10).",
+  "cases": [
+    {
+      "id": "unnecessary-use-client",
+      "expectation": "should-report",
+      "notes": "Presentational component with unnecessary \"use client\""
+    },
+    {
+      "id": "legitimate-client",
+      "expectation": "should-not-report",
+      "notes": "Legitimate client: useState + event handlers — FP must be 0"
+    },
+    {
+      "id": "barrel-client-signal",
+      "expectation": "should-not-report",
+      "notes": "Client signal reached via barrel re-export — must not FP"
+    },
+    {
+      "id": "unresolved-import",
+      "expectation": "should-not-report",
+      "notes": "Unresolved import — must stay silent (docs/03)"
+    },
+    {
+      "id": "weak-signal-forward-ref",
+      "expectation": "should-report",
+      "notes": "forwardRef alone is weak signal → INFO (counts as report; not WARNING FP)"
+    },
+    {
+      "id": "transitive-custom-hook",
+      "expectation": "should-not-report",
+      "notes": "C1: client need via transitive custom hook (useState in imported hook)"
+    },
+    {
+      "id": "children-props-only",
+      "expectation": "should-report",
+      "notes": "Client shell with only children props — children are not an import edge (docs/03)"
+    },
+    {
+      "id": "server-only-server-path",
+      "expectation": "should-not-report",
+      "notes": "server-only on server import path + legitimate client sibling — no ARCH001 FP"
+    }
+  ]
+}
