@@ -1,5 +1,80 @@
-import type { AnalysisResult, Diagnostic } from "@next-architect/core";
+import type {
+  AnalysisResult,
+  Diagnostic,
+  Limitation,
+} from "@next-architect/core";
 import { TOOL_VERSION } from "@next-architect/core";
+
+const LIMITATION_LABELS: Record<Limitation["kind"], [string, string]> = {
+  "unresolved-import": [
+    "import could not be resolved",
+    "imports could not be resolved",
+  ],
+  "unsupported-router": [
+    "router feature not fully supported",
+    "router features not fully supported",
+  ],
+  "dynamic-config": [
+    "configuration value could not be evaluated statically",
+    "configuration values could not be evaluated statically",
+  ],
+  "parse-error": ["file could not be parsed", "files could not be parsed"],
+  "unsupported-next-version": [
+    "Next.js version not verified",
+    "Next.js versions not verified",
+  ],
+};
+
+const SCORE_UNAVAILABLE_REASONS: Record<string, string> = {
+  "partial-rules": "only a subset of rules ran (--rule)",
+  "fast-mode": "type-info rules were skipped (--fast)",
+  "low-coverage": "analysis coverage is below 90%",
+  "no-active-rules": "no scored rules were active",
+};
+
+/**
+ * Always rendered, even when empty: a run that silently omits its own blind
+ * spots reads as "the project is clean" (docs/09 release condition).
+ */
+function formatLimitations(
+  result: AnalysisResult,
+  verbose: boolean,
+): string[] {
+  const lines = ["Limitations"];
+
+  if (result.limitations.length === 0) {
+    lines.push("  none reported for this run");
+    return lines;
+  }
+
+  const byKind = new Map<Limitation["kind"], Limitation[]>();
+  for (const lim of result.limitations) {
+    const bucket = byKind.get(lim.kind);
+    if (bucket) bucket.push(lim);
+    else byKind.set(lim.kind, [lim]);
+  }
+
+  for (const [kind, items] of byKind) {
+    const [singular, plural] = LIMITATION_LABELS[kind];
+    lines.push(`  ${items.length} ${items.length === 1 ? singular : plural}`);
+
+    // Unresolved imports are routinely numerous; the rest are rare enough
+    // that hiding them behind --verbose would just lose information.
+    const detailLimit =
+      verbose || kind !== "unresolved-import" ? items.length : 0;
+    for (const item of items.slice(0, detailLimit)) {
+      lines.push(`    - ${item.file ? `${item.file}: ` : ""}${item.detail}`);
+    }
+    if (detailLimit === 0) {
+      lines.push("    (run with --verbose to list them)");
+    }
+  }
+
+  lines.push(
+    "  Diagnostics are suppressed on paths that touch these — findings may be missing.",
+  );
+  return lines;
+}
 
 export interface PrettyOptions {
   color?: boolean;
@@ -55,12 +130,24 @@ export function formatPretty(
   lines.push(`  ✓ ${result.project.moduleCount} modules analyzed`);
   lines.push(`  ✓ ${result.project.routeCount} routes analyzed`);
 
+  const { clientModuleCount, serverModuleCount, sharedModuleCount } =
+    result.project;
+  if (
+    clientModuleCount !== undefined &&
+    serverModuleCount !== undefined &&
+    sharedModuleCount !== undefined
+  ) {
+    lines.push(
+      `  ✓ Server/Client graph built  (${clientModuleCount} client, ${serverModuleCount} server, ${sharedModuleCount} shared)`,
+    );
+  }
+
   const unresolved = result.limitations.filter(
     (l) => l.kind === "unresolved-import",
   );
   if (unresolved.length) {
     lines.push(
-      `  ⚠ ${unresolved.length} imports could not be resolved   (see --verbose)`,
+      `  ⚠ ${unresolved.length} ${unresolved.length === 1 ? "import" : "imports"} could not be resolved   (see --verbose)`,
     );
   }
 
@@ -79,9 +166,13 @@ export function formatPretty(
     lines.push(`Architecture Score: ${result.score.overall}/100`);
   } else {
     lines.push("Architecture Score: not available");
+    const reason = result.score.unavailableReason;
+    if (reason) {
+      lines.push(`  ${SCORE_UNAVAILABLE_REASONS[reason] ?? reason}.`);
+    }
     if (result.score.coverage < 0.9) {
       lines.push(
-        `  Partial analysis (coverage ${(result.score.coverage * 100).toFixed(0)}%).`,
+        `  Coverage ${(result.score.coverage * 100).toFixed(0)}% — run with --verbose to see unresolved imports.`,
       );
     }
   }
@@ -131,6 +222,9 @@ export function formatPretty(
   }
 
   lines.push("");
+  lines.push(...formatLimitations(result, options.verbose ?? false));
+
+  lines.push("");
   if (result.score.overall !== null) {
     lines.push(`Architecture Score: ${result.score.overall}/100`);
     for (const cat of result.score.categories) {
@@ -145,16 +239,10 @@ export function formatPretty(
     );
   }
 
+  // Point at something that was actually reported.
+  const hintRule = visible[0]?.ruleId ?? "ARCH001";
   lines.push("");
-  lines.push("Run `next-architect explain ARCH002` for details.");
-
-  if (options.verbose && unresolved.length) {
-    lines.push("");
-    lines.push("Unresolved imports:");
-    for (const u of unresolved) {
-      lines.push(`  - ${u.file ?? "?"}: ${u.detail}`);
-    }
-  }
+  lines.push(`Run \`next-architect explain ${hintRule}\` for details.`);
 
   return lines.join("\n");
 }

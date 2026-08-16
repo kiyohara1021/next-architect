@@ -15,7 +15,7 @@ import {
   ProjectDiscoveryError,
 } from "@next-architect/parser";
 import { buildGraph } from "@next-architect/graph";
-import { runRules, getRule } from "@next-architect/rules";
+import { runRules, getRule, resolveActiveRules } from "@next-architect/rules";
 import { formatPretty, formatJson } from "@next-architect/reporters";
 
 export interface CheckOptions {
@@ -109,11 +109,18 @@ export async function runCheck(
   const { graph, limitations: graphLimitations } = buildGraph(parsed);
   const allLimitations = [...parsed.limitations, ...graphLimitations];
 
+  const fastMode = options.fast ?? false;
+  const activeRules = resolveActiveRules({
+    config,
+    fastMode,
+    ruleFilter: options.rules,
+  });
+
   const diagnostics = runRules({
     graph,
     root: project.root,
     config,
-    fastMode: options.fast ?? false,
+    fastMode,
     ruleFilter: options.rules,
   });
 
@@ -130,6 +137,19 @@ export async function runCheck(
 
   const partialAnalysis = !!(options.rules?.length || options.fast);
 
+  const localModules = [...graph.modules.values()].filter(
+    (m) => !m.isExternal && !m.id.startsWith("unresolved:"),
+  );
+  const clientModuleCount = localModules.filter(
+    (m) => m.environment === "client",
+  ).length;
+  const serverModuleCount = localModules.filter(
+    (m) => m.environment === "server",
+  ).length;
+  const sharedModuleCount = localModules.filter(
+    (m) => m.environment === "shared",
+  ).length;
+
   const score = computeScore({
     diagnostics,
     moduleCount,
@@ -137,6 +157,8 @@ export async function runCheck(
       .length,
     coverage,
     partialAnalysis,
+    activeRuleIds: activeRules.map((r) => r.id),
+    fastMode,
   });
 
   const minConfidence =
@@ -163,6 +185,9 @@ export async function runCheck(
       router: project.router,
       moduleCount,
       routeCount: graph.routes.size,
+      clientModuleCount,
+      serverModuleCount,
+      sharedModuleCount,
     },
     diagnostics: displayDiagnostics,
     score,
