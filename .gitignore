@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.next-architect/
+*.tsbuildinfo
+.DS_Store
+coverage/
+*.log
+.turbo/
+corpus/perf/1k-modules/
