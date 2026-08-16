@@ -41,7 +41,16 @@ export interface ResolveResult {
   packageName?: string;
   unresolved: boolean;
   sizeBytes?: number;
+  /** Stylesheet / image / font handled by the bundler, not by resolution. */
+  isAsset?: boolean;
 }
+
+/**
+ * Extensions Next.js hands to loaders rather than to module resolution.
+ * `.json` is deliberately absent — TypeScript resolves it.
+ */
+const ASSET_EXTENSION =
+  /\.(css|scss|sass|less|styl|png|jpe?g|gif|svg|webp|avif|ico|bmp|woff2?|ttf|otf|eot|mp[34]|webm|ogg|wav|pdf|txt|md|glb|gltf)(\?.*)?$/i;
 
 const SKIP_DIRS = new Set([
   "node_modules",
@@ -163,6 +172,19 @@ export function parseProject(
       };
     }
 
+    // Assets handled by the bundler, not by module resolution. Recording these
+    // as unresolved is not cosmetic: ARCH001 stays silent on any path with an
+    // unresolved import, so `import "./globals.css"` in a layout would disable
+    // the rule for every module below it.
+    if (ASSET_EXTENSION.test(specifier)) {
+      return {
+        unresolved: false,
+        isExternal: true,
+        id: `asset:${specifier}`,
+        isAsset: true,
+      };
+    }
+
     // Node builtins
     if (
       specifier.startsWith("node:") ||
@@ -263,15 +285,56 @@ function estimatePackageSize(
     );
     if (!fs.existsSync(pkgJsonPath)) return undefined;
     const pkgDir = path.dirname(pkgJsonPath);
-    return dirSizeBytes(pkgDir, 2);
+    return packageRuntimeSize(pkgDir, 0);
   } catch {
     return undefined;
   }
 }
 
-/** Shallow directory size (depth-limited) for approximate unpacked size. */
-function dirSizeBytes(dir: string, maxDepth: number, depth = 0): number {
-  if (depth > maxDepth) return 0;
+/**
+ * Files inside node_modules that never reach a browser: type declarations,
+ * source maps, docs, and TypeScript sources shipped next to the build.
+ */
+const NON_RUNTIME_FILE =
+  /(\.map|\.d\.[cm]?ts|\.md|\.markdown|\.txt|\.flow|\.ts|\.tsx)$|^(LICENSE|LICENCE|CHANGELOG|README|AUTHORS|NOTICE)/i;
+
+/**
+ * Alternate builds of code already counted once. A bundler picks one format;
+ * the UMD, IIFE, ES5, and minified copies are the same code again.
+ */
+const DUPLICATE_BUILD = /(^|[.\-_])(umd|iife|es5|system|amd)([.\-_]|$)|\.min\./i;
+
+/** Directories that hold nothing a bundler would pull from a package. */
+const SKIP_PACKAGE_DIRS = new Set([
+  "node_modules",
+  ".git",
+  "__tests__",
+  "test",
+  "tests",
+  "docs",
+  "doc",
+  "example",
+  "examples",
+  "benchmark",
+  "benchmarks",
+  "coverage",
+]);
+
+const MAX_PACKAGE_SCAN_DEPTH = 6;
+
+/**
+ * Approximate unpacked size of the code a bundler could pull from a package.
+ *
+ * This used to reuse SKIP_DIRS — the set written for walking a user's project,
+ * which excludes `dist`. It therefore skipped the published build entirely and
+ * measured the TypeScript sources sitting beside it, so the sizes ARCH004
+ * reported described the wrong files (corpus/oss/REVIEW.md, D4).
+ *
+ * Still an over-estimate: CJS and ESM builds are counted together and
+ * tree-shaking is invisible here. docs/05 requires the output to say so.
+ */
+function packageRuntimeSize(dir: string, depth: number): number {
+  if (depth > MAX_PACKAGE_SCAN_DEPTH) return 0;
   let total = 0;
   let entries: fs.Dirent[];
   try {
@@ -280,11 +343,19 @@ function dirSizeBytes(dir: string, maxDepth: number, depth = 0): number {
     return 0;
   }
   for (const entry of entries) {
-    if (SKIP_DIRS.has(entry.name)) continue;
+    if (entry.name.startsWith(".")) continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      total += dirSizeBytes(full, maxDepth, depth + 1);
+      if (
+        SKIP_PACKAGE_DIRS.has(entry.name) ||
+        DUPLICATE_BUILD.test(entry.name)
+      ) {
+        continue;
+      }
+      total += packageRuntimeSize(full, depth + 1);
     } else if (entry.isFile()) {
+      if (NON_RUNTIME_FILE.test(entry.name)) continue;
+      if (DUPLICATE_BUILD.test(entry.name)) continue;
       try {
         total += fs.statSync(full).size;
       } catch {

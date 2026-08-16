@@ -24,8 +24,14 @@ The OSS corpus ([`corpus/oss/`](corpus/oss/)) closes part of that gap: six pinne
 App Router examples from `vercel/next.js`, analyzed with their real dependencies
 installed. It measures **noise** — report density and unresolved-import rate.
 Whether each finding is a true or false positive is a human call, recorded in
-[`corpus/oss/REVIEW.md`](corpus/oss/REVIEW.md), and **no completed review pass
+[`corpus/oss/REVIEW.md`](corpus/oss/REVIEW.md), and **no human-confirmed pass
 exists yet**. Until one does, the FP numbers describe our own fixtures only.
+
+The corpus found four defects on its first run — including three ARCH001 false
+positives on Next.js's own example code. Those are fixed and guarded by
+fixtures. It still fails its own density gate (6.6 findings per 100 modules
+against a limit of 5), and the remaining noise is ARCH004's unpacked-size
+proxy; see D5 in the review log.
 
 The same applies to `corpus:perf`: 1,000 generated modules with trivial bodies say
 little about a real project of that size.

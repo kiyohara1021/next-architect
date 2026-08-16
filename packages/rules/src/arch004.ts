@@ -101,6 +101,10 @@ export const arch004: Rule = {
           if (edge.isTypeOnly || edge.unresolved) continue;
 
           const target = ctx.getModule(edge.to);
+          // P2: client propagation stops at a Server Action boundary. Next.js
+          // replaces the import with an RPC reference, so nothing behind it
+          // reaches the bundle (docs/03 §3.3).
+          if (target?.hasServerActionDirective) continue;
           const shakeable = baseShakeable || edge.reachability === "shakeable";
           const dynamic = baseDynamic || edge.type === "dynamic";
           // The diagnostic points at the entry file, so its line must be the
@@ -158,11 +162,34 @@ export const arch004: Rule = {
           ...clientModules.filter((m) => !entries.includes(m)),
         ];
 
+        // One report per package, not per client entry. The corpus showed
+        // tailwind-merge reported eight times across eight components — each
+        // one correct, and collectively noise (corpus/oss/REVIEW.md, D4).
+        const reportedPackages = new Map<string, { entries: number }>();
+        const pending: Array<{ root: ModuleNode; hit: Reached; pkg: string }> =
+          [];
+
         for (const root of roots) {
           if (visited.has(root.id)) continue;
           for (const hit of walkFrom(root, visited)) {
+            const pkgNode = ctx.getModule(hit.pathIds[hit.pathIds.length - 1]!);
+            if (!pkgNode?.packageName) continue;
+            const seen = reportedPackages.get(pkgNode.packageName);
+            if (seen) {
+              seen.entries += 1;
+              continue;
+            }
+            reportedPackages.set(pkgNode.packageName, { entries: 1 });
+            pending.push({ root, hit, pkg: pkgNode.packageName });
+          }
+        }
+
+        {
+          for (const { root, hit } of pending) {
             const pkg = ctx.getModule(hit.pathIds[hit.pathIds.length - 1]!);
             if (!pkg?.packageName) continue;
+            const otherEntries =
+              (reportedPackages.get(pkg.packageName)?.entries ?? 1) - 1;
 
             const sizeBytes = pkg.sizeBytes ?? 0;
             const kb = Math.round(sizeBytes / 1024);
@@ -170,6 +197,10 @@ export const arch004: Rule = {
             const usedLine =
               usedExports.length > 0
                 ? `\n  Used exports: ${usedExports.join(", ")}`
+                : "";
+            const entriesLine =
+              otherEntries > 0
+                ? `\n  Also reached from ${otherEntries} other client ${otherEntries === 1 ? "entry" : "entries"}`
                 : "";
 
             ctx.report({
@@ -179,7 +210,7 @@ export const arch004: Rule = {
               line: hit.entryEdge.loc.line,
               column: hit.entryEdge.loc.column,
               message: "Large dependency enters client bundle",
-              explanation: `Estimated unpacked size: ~${kb} KB (approximate; see notes)\n  sizeSource: unpacked${usedLine}\n\n  Consider:\n    - import the specific submodule directly\n    - next/dynamic with { ssr: false }\n    - move the processing to a Server Component`,
+              explanation: `Estimated unpacked size: ~${kb} KB (approximate; see notes)\n  sizeSource: unpacked${usedLine}${entriesLine}\n\n  Consider:\n    - import the specific submodule directly\n    - next/dynamic with { ssr: false }\n    - move the processing to a Server Component`,
               suggestion:
                 "Prefer a lighter import path or load the dependency only on the server when possible. For exact sizes use @next/bundle-analyzer.",
               confidence: computeConfidence(arch004.baseConfidence, {

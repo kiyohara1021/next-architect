@@ -10,3 +10,6 @@ corpus/perf/1k-modules/
 
 # OSS corpus checkout (fetched on demand, never vendored)
 corpus/oss/.cache/
+
+# Fixture packages are materialized by the corpus runners, not committed
+corpus/*/cases/*/node_modules/
