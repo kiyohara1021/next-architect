@@ -1,12 +1,14 @@
 import path from "node:path";
 import ts from "typescript";
 import type {
+  AwaitInfo,
   ClientSignal,
   ExportInfo,
   Limitation,
   RouteKind,
   SourceLocation,
 } from "@next-architect/core";
+import { extractAwaits } from "./awaits.js";
 
 const STRONG_HOOKS = new Set([
   "useState",
@@ -61,6 +63,9 @@ export interface ExtractedModule {
   id: string;
   path: string;
   directives: string[];
+  /** Full range of the leading directive statement (for ARCH001's fix). */
+  directiveLoc?: SourceLocation;
+  awaits: AwaitInfo[];
   imports: RawImport[];
   exports: ExportInfo[];
   clientSignals: ClientSignal[];
@@ -77,19 +82,47 @@ function locOf(node: ts.Node, sf: ts.SourceFile): SourceLocation {
   return { line: start.line + 1, column: start.character + 1 };
 }
 
-function getDirectives(sf: ts.SourceFile): string[] {
+function getDirectives(sf: ts.SourceFile): {
+  directives: string[];
+  directiveLoc?: SourceLocation;
+} {
   const directives: string[] = [];
+  let directiveLoc: SourceLocation | undefined;
+
   for (const stmt of sf.statements) {
     if (!ts.isExpressionStatement(stmt)) break;
     if (!ts.isStringLiteral(stmt.expression)) break;
     const text = stmt.expression.text;
-    if (text === "use client" || text === "use server") {
-      directives.push(text);
-    } else {
-      break;
-    }
+    if (text !== "use client" && text !== "use server") break;
+
+    directives.push(text);
+    if (!directiveLoc) directiveLoc = fullStatementLoc(stmt, sf);
   }
-  return directives;
+
+  return { directives, directiveLoc };
+}
+
+/**
+ * Range covering a statement including its trailing semicolon and line break,
+ * so removing it leaves no blank first line.
+ */
+function fullStatementLoc(
+  stmt: ts.Statement,
+  sf: ts.SourceFile,
+): SourceLocation {
+  const start = sf.getLineAndCharacterOfPosition(stmt.getStart(sf));
+  const text = sf.text;
+  let end = stmt.getEnd();
+  if (text[end] === "\r") end += 1;
+  if (text[end] === "\n") end += 1;
+  const endPos = sf.getLineAndCharacterOfPosition(end);
+
+  return {
+    line: start.line + 1,
+    column: start.character + 1,
+    endLine: endPos.line + 1,
+    endColumn: endPos.character + 1,
+  };
 }
 
 function detectRouteKind(
@@ -449,7 +482,7 @@ export function extractFromSourceFile(
 ): ExtractedModule {
   const absolute = sf.fileName;
   const id = normalizeModuleId(projectRoot, absolute);
-  const directives = getDirectives(sf);
+  const { directives, directiveLoc } = getDirectives(sf);
   const imports = extractImports(sf);
   const exports = extractExports(sf);
   const clientSignals = collectClientSignals(sf, imports);
@@ -463,6 +496,8 @@ export function extractFromSourceFile(
     id,
     path: absolute,
     directives,
+    directiveLoc,
+    awaits: extractAwaits(sf),
     imports,
     exports,
     clientSignals,

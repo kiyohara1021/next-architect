@@ -1,4 +1,5 @@
 export { discoverProject, ProjectDiscoveryError, type ProjectInfo } from "./discover.js";
+export { extractAwaits } from "./awaits.js";
 export {
   extractFromSourceFile,
   createProgram,

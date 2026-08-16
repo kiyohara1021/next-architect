@@ -16,7 +16,11 @@ interface CacheEntry {
   module: ExtractedModule;
 }
 
-const PARSER_VERSION = "0.1.0";
+/**
+ * Bump whenever ExtractedModule's shape changes — entries written by an older
+ * parser are missing fields and must not be served from cache.
+ */
+const PARSER_VERSION = "0.2.0";
 
 export class ModuleCache {
   private dir: string;

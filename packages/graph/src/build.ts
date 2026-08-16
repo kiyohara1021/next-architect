@@ -700,6 +700,8 @@ function toModuleNode(extracted: ExtractedModule): ModuleNode {
     environment: "shared",
     environmentReason: { kind: "reachability" },
     directives: extracted.directives,
+    directiveLoc: extracted.directiveLoc,
+    awaits: extracted.awaits,
     imports: [], // filled after edge resolution
     exports: extracted.exports,
     isRoute: extracted.isRoute,
