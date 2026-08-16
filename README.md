@@ -10,13 +10,25 @@
 
 ## Status
 
-**v0.1 Core Engine is implemented on branch `feat/v0.1-core`.** Specs in [`docs/`](docs/) remain the source of truth.
+**v0.1 Core Engine is implemented.** Specs in [`docs/`](docs/) remain the source of truth.
 
-Local gates on this branch: ARCH001–005 corpus FP runners, smoke, and a 1k-module perf gate. Not published to npm yet — use from this repo after build.
+Gates in CI: ARCH001–005 corpus FP runners, smoke, and a 1k-module perf gate. Not published to npm yet — use from this repo after build.
+
+### What the "0 false positives" claim covers
+
+The FP gates run against **hand-written synthetic cases in this repo**, not real
+applications. ARCH001 and ARCH003 report zero false positives on cases we wrote
+ourselves, which is a regression guard — not evidence that the rules are quiet on
+real code. The OSS corpus that docs/10 asks for, and the human review pass that
+goes with it, have not been done. Treat the numbers accordingly until they are.
+
+The same applies to `corpus:perf`: 1,000 generated modules with trivial bodies say
+little about a real project of that size.
 
 Known gaps vs full v0.1 polish (intentionally deferred):
 
 - ARCH002 does not yet flag non-`NEXT_PUBLIC_` `process.env` as a strong server signal ([docs/05](docs/05-rules.md#arch002--client-boundary-pollution))
+- ARCH004 reports the exports the client graph uses, but not the `n of m` ratio in [docs/05](docs/05-rules.md#arch004--large-dependency-in-client-bundle) — the package's own export count needs a type-aware pass
 - Parser keeps a Program handle for API compat but does not run a type-aware bind for rules
 - No OSS / multi-app corpus or `corpus:diff` yet ([docs/10](docs/10-quality-strategy.md))
 - MCP / HTML report / `fix` are later milestones ([docs/09](docs/09-roadmap.md))

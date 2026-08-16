@@ -1,0 +1,10 @@
+{
+  "name": "corpus-arch004-transitive-large-dep",
+  "private": true,
+  "dependencies": {
+    "next": "15.0.0",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "corpus-huge-lib": "0.0.0"
+  }
+}

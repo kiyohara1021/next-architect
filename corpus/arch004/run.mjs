@@ -71,7 +71,11 @@ function ensureVendorPackage(caseRoot, name, opts) {
  */
 function ensureCaseVendors(caseRoot, caseId) {
   // Huge lib (~120KB) for TP + server-only TN cases
-  if (caseId === "large-client-dep" || caseId === "server-large-dep") {
+  if (
+    caseId === "large-client-dep" ||
+    caseId === "server-large-dep" ||
+    caseId === "transitive-large-dep"
+  ) {
     ensureVendorPackage(caseRoot, "corpus-huge-lib", {
       exportName: "Chart",
       paddingBytes: 120 * 1024,

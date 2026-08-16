@@ -74,8 +74,19 @@ const goodHits = manifest.assert.mustNotReportArch001.flatMap((rel) =>
   })),
 );
 
+// docs/09 release condition: limitations is always emitted — in the JSON
+// result and as a section of the human-readable report, including when there
+// is nothing to disclose.
+const pretty = await runCheck({ root, rules: [RULE_ID], ci: true, noCache: true });
+const limitationsShown = /^Limitations$/m.test(pretty.output);
+const limitationsInJson = Array.isArray(outcome.result.limitations);
+
 const lines = [];
 lines.push("ARCH001 real-project smoke (corpus/smoke/mini-app)");
+lines.push("");
+lines.push(
+  `limitations always emitted: json=${limitationsInJson ? "ok" : "MISSING"} pretty=${limitationsShown ? "ok" : "MISSING"}`,
+);
 lines.push("");
 lines.push(
   `Planted ${manifest.assert.plantedFile}: ${planted.length} ARCH001 (need ≥${manifest.assert.minArch001OnPlanted})`,
@@ -106,6 +117,9 @@ if (planted.length < manifest.assert.minArch001OnPlanted) {
   failed = true;
 }
 if (goodHits.length > 0) {
+  failed = true;
+}
+if (!limitationsShown || !limitationsInJson) {
   failed = true;
 }
 
