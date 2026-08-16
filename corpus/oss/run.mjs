@@ -61,16 +61,15 @@ for (const app of run.apps) {
     .map((id) => `${id}=${app.rules[id]}`)
     .join(" ");
 
-  const densityOk = app.diagnosticsPer100Modules <= MAX_DIAGNOSTICS_PER_100_MODULES;
-  const unresolvedOk = app.unresolvedRate <= MAX_UNRESOLVED_RATE;
-  if (!densityOk || !unresolvedOk) failed = true;
-
+  // docs/10 §10.3 states both limits for the corpus as a whole. Per-app
+  // numbers are printed for orientation — a small app crosses 5/100 on a
+  // single finding, which says nothing on its own.
   lines.push(
-    `${densityOk && unresolvedOk ? "PASS" : "FAIL"}  ${app.id.padEnd(24)} ` +
+    `      ${app.id.padEnd(24)} ` +
       `modules=${String(app.moduleCount).padStart(3)} ` +
       `findings=${String(findingCount).padStart(2)} ` +
-      `density=${app.diagnosticsPer100Modules.toFixed(2)}/100${densityOk ? "" : ` >${MAX_DIAGNOSTICS_PER_100_MODULES}`} ` +
-      `unresolved=${(app.unresolvedRate * 100).toFixed(1)}%${unresolvedOk ? "" : ` >${MAX_UNRESOLVED_RATE * 100}%`} ` +
+      `density=${app.diagnosticsPer100Modules.toFixed(2)}/100 ` +
+      `unresolved=${(app.unresolvedRate * 100).toFixed(1)}% ` +
       `${app.elapsedMs.toFixed(0)}ms`,
   );
   if (byRule) lines.push(`      ${byRule}`);
@@ -86,11 +85,19 @@ const overallDensity = totalModules
   : 0;
 const overallUnresolved = totalModules ? totalUnresolved / totalModules : 0;
 
+const densityOk = overallDensity <= MAX_DIAGNOSTICS_PER_100_MODULES;
+const unresolvedOk = overallUnresolved <= MAX_UNRESOLVED_RATE;
+if (!densityOk || !unresolvedOk) failed = true;
+
 lines.push("");
 lines.push(
-  `Totals: modules=${totalModules} findings=${totalFindings} ` +
-    `density=${overallDensity.toFixed(2)}/100 (limit ${MAX_DIAGNOSTICS_PER_100_MODULES}) ` +
-    `unresolved=${(overallUnresolved * 100).toFixed(1)}% (limit ${MAX_UNRESOLVED_RATE * 100}%)`,
+  `${densityOk ? "PASS" : "FAIL"}  density    ${overallDensity.toFixed(2)} / 100 modules (limit ${MAX_DIAGNOSTICS_PER_100_MODULES})`,
+);
+lines.push(
+  `${unresolvedOk ? "PASS" : "FAIL"}  unresolved ${(overallUnresolved * 100).toFixed(1)}% (limit ${MAX_UNRESOLVED_RATE * 100}%)`,
+);
+lines.push(
+  `      modules=${totalModules} findings=${totalFindings} across ${run.apps.length} apps`,
 );
 lines.push(
   "False-positive rate is not computed here — it requires human judgement (corpus/oss/REVIEW.md).",

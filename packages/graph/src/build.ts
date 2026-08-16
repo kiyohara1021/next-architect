@@ -332,22 +332,18 @@ function buildImportEdges(
             forcedClient: resolved.packageName === "client-only",
           });
 
-          // Detect "use client" in package entry for C3
-          if (resolved.resolvedPath && fs.existsSync(resolved.resolvedPath)) {
-            try {
-              const head = fs.readFileSync(resolved.resolvedPath, "utf8").slice(0, 500);
-              if (
-                /["']use client["']/.test(head) ||
-                head.trimStart().startsWith('"use client"') ||
-                head.trimStart().startsWith("'use client'")
-              ) {
-                const node = moduleNodes.get(resolved.id)!;
-                node.directives = ["use client"];
-                node.environment = "client";
-                node.environmentReason = { kind: "directive" };
-              }
-            } catch {
-              // ignore
+          // C3: is this a client-only package?
+          if (resolved.resolvedPath && !resolved.isAsset) {
+            const verdict = detectClientOnlyPackage(resolved.resolvedPath);
+            if (verdict) {
+              const node = moduleNodes.get(resolved.id)!;
+              // Only a real directive is recorded as one. A package inferred
+              // from its runtime API use gets the flag, not a fabricated
+              // directive.
+              if (verdict === "directive") node.directives = ["use client"];
+              node.isClientOnlyPackage = true;
+              node.environment = "client";
+              node.environmentReason = { kind: "directive" };
             }
           }
         }
@@ -693,6 +689,163 @@ function findBoundaries(
   return boundaries;
 }
 
+/** React APIs that only run on the client. Seeing these in a package's own
+ * code means importing it pulls client behaviour in, whether or not the
+ * package bothered to mark itself. */
+const CLIENT_RUNTIME_API =
+  /\b(useState|useReducer|useEffect|useLayoutEffect|useContext|useSyncExternalStore|useInsertionEffect|createContext)\b/;
+
+/** Entry files above this are not scanned — a bundle that large tells us
+ * nothing we can act on, and reading it on every run is not worth it. */
+const MAX_ENTRY_SCAN_BYTES = 2_000_000;
+
+const clientOnlyPackageCache = new Map<
+  string,
+  "directive" | "runtime" | null
+>();
+
+/**
+ * C3 (docs/03 §3.4): decide whether an npm package is client-only.
+ *
+ * The spec originally looked for a `"use client"` directive in the resolved
+ * entry. That misses packages which are unusable on the server but never say
+ * so — `styled-components` ships no directive at all — and the OSS corpus
+ * showed ARCH001 reporting those files with 95% confidence
+ * (corpus/oss/REVIEW.md, D1).
+ *
+ * So we check three things, cheapest first:
+ *   1. a `"use client"` directive in the resolved entry
+ *   2. the same in the ESM entry, when package.json points somewhere else
+ *   3. failing both, whether the package's own code calls client-only React
+ *      APIs
+ *
+ * (3) is deliberately broad. It can only ever *silence* ARCH001, and staying
+ * quiet is the side to err on (docs/10 §10.1).
+ */
+function detectClientOnlyPackage(
+  entryPath: string,
+): "directive" | "runtime" | null {
+  const cached = clientOnlyPackageCache.get(entryPath);
+  if (cached !== undefined) return cached;
+
+  let verdict: "directive" | "runtime" | null = null;
+  for (const candidate of entryCandidates(entryPath)) {
+    const content = readIfSmall(candidate);
+    if (content === null) continue;
+    if (hasUseClientDirective(content)) {
+      verdict = "directive";
+      break;
+    }
+    if (verdict === null && CLIENT_RUNTIME_API.test(content)) {
+      verdict = "runtime";
+      // Keep looking: a directive in a sibling entry is the stronger answer.
+    }
+  }
+
+  clientOnlyPackageCache.set(entryPath, verdict);
+  return verdict;
+}
+
+/** The resolved entry, plus the ESM entry when package.json names a different
+ * one — bundlers commonly mark only the ESM build. */
+function entryCandidates(entryPath: string): string[] {
+  const candidates = [entryPath];
+  const pkgDir = packageDirOf(entryPath);
+  if (!pkgDir) return candidates;
+
+  try {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(pkgDir, "package.json"), "utf8"),
+    ) as { module?: string; main?: string };
+    for (const field of [pkg.module, pkg.main]) {
+      if (typeof field !== "string") continue;
+      const resolved = path.resolve(pkgDir, field);
+      if (resolved !== entryPath && fs.existsSync(resolved)) {
+        candidates.push(resolved);
+      }
+    }
+  } catch {
+    // No readable package.json — the resolved entry is all we have.
+  }
+  return candidates;
+}
+
+function packageDirOf(entryPath: string): string | undefined {
+  let dir = path.dirname(entryPath);
+  for (let i = 0; i < 6; i++) {
+    if (fs.existsSync(path.join(dir, "package.json"))) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return undefined;
+}
+
+function readIfSmall(filePath: string): string | null {
+  try {
+    if (fs.statSync(filePath).size > MAX_ENTRY_SCAN_BYTES) return null;
+    return fs.readFileSync(filePath, "utf8");
+  } catch {
+    return null;
+  }
+}
+
+/** A directive is only a directive in the prologue, before any real code. */
+function hasUseClientDirective(content: string): boolean {
+  const prologue = content.slice(0, 2000);
+  return /^\s*(?:(?:\/\/[^\n]*|\/\*[\s\S]*?\*\/)\s*)*["']use client["']/.test(
+    prologue,
+  );
+}
+
+/**
+ * Follow non-type imports until a client-only package turns up, passing only
+ * through modules that declare no boundary of their own.
+ *
+ * A module carrying `"use client"` is where the boundary already is, so
+ * importing it says nothing about the importer — that is ordinary Server →
+ * Client composition. An unmarked module is different: whatever it pulls in
+ * lands in the importer's environment.
+ */
+function reachesClientOnlyPackage(
+  m: ModuleNode,
+  modules: Map<string, ModuleNode>,
+  seen: Set<string>,
+  depth: number,
+): { name: string; via: string[] } | undefined {
+  if (depth > 12) return undefined;
+
+  for (const e of m.imports) {
+    if (e.isTypeOnly || e.unresolved) continue;
+    const to = modules.get(e.to);
+    if (!to) continue;
+
+    if (to.isExternal) {
+      if (isClientOnlyExternal(to) || to.packageName === "client-only") {
+        return { name: to.packageName ?? to.id, via: [to.id] };
+      }
+      continue;
+    }
+
+    if (to.directives.includes("use client")) continue;
+    if (seen.has(to.id)) continue;
+    seen.add(to.id);
+
+    const nested = reachesClientOnlyPackage(to, modules, seen, depth + 1);
+    if (nested) return { name: nested.name, via: [to.id, ...nested.via] };
+  }
+
+  return undefined;
+}
+
+/** C3 verdict for an external node, however it was reached. */
+function isClientOnlyExternal(m: ModuleNode): boolean {
+  return (
+    m.isExternal &&
+    (m.isClientOnlyPackage === true || m.directives.includes("use client"))
+  );
+}
+
 function toModuleNode(extracted: ExtractedModule): ModuleNode {
   return {
     id: extracted.id,
@@ -748,7 +901,7 @@ export function buildGraph(parsed: ParsedProject): {
 
   // Also seed client from client-only packages already marked
   for (const m of moduleNodes.values()) {
-    if (m.isExternal && m.directives.includes("use client")) {
+    if (isClientOnlyExternal(m)) {
       m.environment = "client";
       m.environmentReason = { kind: "directive" };
     }
@@ -816,7 +969,7 @@ function enrichTransitiveSignals(
     for (const to of out.get(id) ?? []) {
       const t = modules.get(to);
       if (!t) continue;
-      if (t.isExternal && t.directives.includes("use client")) return true;
+      if (isClientOnlyExternal(t)) return true;
       if (t.packageName === "client-only") return true;
       if (!t.isExternal && hasStrongClientSignal(to, seen)) return true;
     }
@@ -832,13 +985,29 @@ function enrichTransitiveSignals(
       if (
         to.directives.includes("use client") ||
         to.packageName === "client-only" ||
-        (to.isExternal && to.directives.includes("use client"))
+        isClientOnlyExternal(to)
       ) {
         m.clientSignals.push({
           kind: "client-module",
           strength: "strong",
           name: to.packageName ?? to.id,
           via: [to.id],
+        });
+      }
+    }
+
+    // C3 through unmarked modules. `page.tsx` importing a local styles module
+    // that imports styled-components needs "use client" just as much as the
+    // styles module does — the OSS corpus reported both as unnecessary
+    // (corpus/oss/REVIEW.md, D1).
+    if (!m.clientSignals.some((s) => s.strength === "strong")) {
+      const reached = reachesClientOnlyPackage(m, modules, new Set([m.id]), 0);
+      if (reached) {
+        m.clientSignals.push({
+          kind: "client-only-import",
+          strength: "strong",
+          name: reached.name,
+          via: reached.via,
         });
       }
     }

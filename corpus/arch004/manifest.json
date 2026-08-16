@@ -26,6 +26,11 @@
       "id": "unresolved-import",
       "expectation": "should-not-report",
       "notes": "Unresolved package import — must stay silent (docs/03)"
+    },
+    {
+      "id": "server-action-boundary",
+      "expectation": "should-not-report",
+      "notes": "P2: a large package behind a \"use server\" module never reaches the browser (corpus/oss/REVIEW.md D2)"
     }
   ]
 }

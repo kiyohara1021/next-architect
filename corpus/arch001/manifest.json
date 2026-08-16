@@ -41,6 +41,16 @@
       "id": "server-only-server-path",
       "expectation": "should-not-report",
       "notes": "server-only on server import path + legitimate client sibling — no ARCH001 FP"
+    },
+    {
+      "id": "client-only-package",
+      "expectation": "should-not-report",
+      "notes": "C3 through an unmarked module: client-only package with no directive of its own (corpus/oss/REVIEW.md D1)"
+    },
+    {
+      "id": "asset-import",
+      "expectation": "should-report",
+      "notes": "A .css import in the layout must not silence ARCH001 (corpus/oss/REVIEW.md D3)"
     }
   ]
 }

@@ -81,6 +81,12 @@ function ensureCaseVendors(caseRoot, caseId) {
       paddingBytes: 120 * 1024,
     });
   }
+  if (caseId === "server-action-boundary") {
+    ensureVendorPackage(caseRoot, "corpus-huge-lib", {
+      exportName: "Chart",
+      paddingBytes: 120 * 1024,
+    });
+  }
   if (caseId === "small-ok-dep") {
     ensureVendorPackage(caseRoot, "corpus-tiny-lib", {
       exportName: "Widget",

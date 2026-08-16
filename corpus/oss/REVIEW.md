@@ -29,6 +29,60 @@ false positives.
 
 ## Passes
 
+### 2026-08-17 — second pass, after the D1–D4 fixes (Claude, **pending human confirmation**)
+
+Corpus unchanged (`vercel/next.js@dd76599c`). 26 findings → **7**.
+
+| App | Rule | Package / location | Verdict | Notes |
+| --- | --- | --- | --- | --- |
+| prisma-postgres | ARCH001 | `app/Header.tsx:1` | **TP** | Unchanged from the first pass |
+| prisma-postgres | ARCH005 | `app/api/posts/route.ts:18` | **TP** | Unchanged from the first pass |
+| with-styled-components | ARCH004 | `styled-components` (306 KB) | **TP** | Genuinely ships to the browser |
+| with-supabase | ARCH004 | `lucide-react` (2,355 KB) | **TP** | Large by any measure; tree-shaking is the mitigation, and the rule says so |
+| with-dynamic-import | ARCH004 | `fuse.js` (240 KB) | **TP** | Confidence already discounted to 72% for the dynamic import |
+| with-supabase | ARCH004 | `tailwind-merge` (210 KB) | **FP** | ~7 KB gzipped. Unpacked size is the wrong proxy → D5 |
+| with-supabase | ARCH004 | `@supabase/ssr` (106 KB) | **weak** | Six KB over the threshold; true but not worth saying |
+
+ARCH001 FP = **0**, ARCH003 FP = 0, ARCH005 FP = 0. ARCH004 FP rate = 1/5 (20%),
+within the 25% docs/10 allows for info rules.
+
+**Report density is 6.60 / 100 modules against a limit of 5**, so the corpus
+gate still fails. Every remaining finding is ARCH004, and the two that should
+not be there are both size-proxy artifacts (D5). This is now the only thing
+between the corpus and a green run.
+
+#### Fix verification
+
+| Defect | Status | Guard |
+| --- | --- | --- |
+| D1 — client-only package not recognized | fixed | `corpus/arch001/cases/client-only-package` |
+| D2 — rules walk through `"use server"` | fixed | `corpus/arch004/cases/server-action-boundary` |
+| D3 — asset imports counted as unresolved | fixed | `corpus/arch001/cases/asset-import` |
+| D4 — ARCH004 granularity and size | partly fixed | per-package dedupe + real package sizes; see D5 |
+
+#### D5 — unpacked size cannot carry ARCH004 (open)
+
+Fixing D4 exposed a measurement bug underneath it: the size walk reused the
+skip-list written for scanning a user's project, which excludes `dist/`. It had
+been skipping every package's published build and measuring the TypeScript
+sources beside it. With that corrected, sizes are real — and the proxy's own
+limits become the problem. `tailwind-merge` is 210 KB unpacked and about 7 KB
+gzipped; unpacked size cannot tell the two apart, and it counts the CJS and ESM
+builds together.
+
+Options, none of them free:
+
+1. Raise the default threshold (docs/05 fixes it at 100 KB). Cheap, arbitrary,
+   and it would drop `@supabase/ssr` and `tailwind-merge` together.
+2. Gzip the package's runtime files for the estimate. Much closer to what a user
+   feels, and it is what makes `tailwind-merge` obviously not worth reporting —
+   but it costs real time on packages the size of `lucide-react`.
+3. Accept it, and let the corpus gate stay red on density.
+
+This needs a decision before v0.1 ships.
+
+---
+
 ### 2026-08-16 — first pass (Claude, **pending human confirmation**)
 
 Corpus: `vercel/next.js@dd76599c`, next-architect 0.1.0, all 6 apps with
