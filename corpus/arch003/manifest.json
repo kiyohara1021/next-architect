@@ -1,0 +1,31 @@
+{
+  "ruleId": "ARCH003",
+  "description": "Local synthetic App Router corpus for ARCH003 false-positive gate (docs/09–10).",
+  "cases": [
+    {
+      "id": "server-only-leak",
+      "expectation": "should-report",
+      "notes": "Client Component imports module with import \"server-only\" — classic P5 leak"
+    },
+    {
+      "id": "server-only-server-path",
+      "expectation": "should-not-report",
+      "notes": "server-only only on server import path + legitimate client sibling — no ARCH003"
+    },
+    {
+      "id": "client-imports-shared",
+      "expectation": "should-not-report",
+      "notes": "Client imports shared util (no server-only) — must not FP"
+    },
+    {
+      "id": "barrel-server-leak",
+      "expectation": "should-report",
+      "notes": "Client reaches server-only via barrel named re-export"
+    },
+    {
+      "id": "unresolved-import",
+      "expectation": "should-not-report",
+      "notes": "Unresolved import — must stay silent (docs/03)"
+    }
+  ]
+}
