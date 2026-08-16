@@ -3,6 +3,7 @@ import {
   computeConfidence,
   isDtsOrGeneratedPath,
   isTestOrStoriesPath,
+  FIX_MIN_CONFIDENCE,
 } from "@next-architect/core";
 
 function hasUnresolvedInDeps(ctx: AnalysisContext, moduleId: string): boolean {
@@ -104,10 +105,15 @@ export const arch001: Rule = {
 
         // Nothing at all → WARNING
         const confidence = computeConfidence(arch001.baseConfidence, factors);
-        const fixSafe =
-          confidence >= 0.95 &&
-          node.directives.length === 1 &&
-          !hasUnresolvedInDeps(ctx, node.id);
+
+        // Only offer a fix when we know the exact directive range. Without it
+        // an edit would be a no-op that silently "succeeds".
+        const loc = node.directiveLoc;
+        const fixable =
+          loc?.endLine !== undefined &&
+          loc.endColumn !== undefined &&
+          confidence >= FIX_MIN_CONFIDENCE &&
+          node.directives.length === 1;
 
         ctx.report({
           ruleId: "ARCH001",
@@ -120,18 +126,22 @@ export const arch001: Rule = {
             '"use client" is present, but no client-only features were detected.\n\n  Checked:\n    ✗ hooks (useState, useEffect, ...)\n    ✗ event handlers\n    ✗ browser APIs\n    ✗ client-only imports\n    ✗ transitively client-only custom hooks',
           suggestion: 'Remove "use client"',
           confidence,
-          fix: {
-            safe: fixSafe,
-            description: 'Remove "use client" directive',
-            edits: [
-              {
-                file: node.id,
-                start: { line: 1, column: 1 },
-                end: { line: 1, column: 1 },
-                newText: "",
-              },
-            ],
-          },
+          ...(fixable && loc
+            ? {
+                fix: {
+                  safe: true,
+                  description: 'Remove "use client" directive',
+                  edits: [
+                    {
+                      file: node.id,
+                      start: { line: loc.line, column: loc.column },
+                      end: { line: loc.endLine!, column: loc.endColumn! },
+                      newText: "",
+                    },
+                  ],
+                },
+              }
+            : {}),
         });
       },
     };

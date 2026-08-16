@@ -23,6 +23,29 @@ export function getRule(id: string): Rule | undefined {
   return allRules.find((r) => r.id === id);
 }
 
+export interface RuleSelection {
+  config: NextArchitectConfig;
+  fastMode?: boolean;
+  ruleFilter?: string[];
+}
+
+/**
+ * Rules that will actually run. The score needs this too: a category with no
+ * active rules is excluded rather than counted as a perfect 100 (docs/07).
+ */
+export function resolveActiveRules(selection: RuleSelection): Rule[] {
+  const { config, fastMode = false, ruleFilter } = selection;
+
+  return allRules.filter((r) => {
+    if (ruleFilter && ruleFilter.length > 0 && !ruleFilter.includes(r.id)) {
+      return false;
+    }
+    if (config.rules?.[r.id] === "off") return false;
+    if (fastMode && r.requiresTypeInfo) return false;
+    return true;
+  });
+}
+
 export function runRules(options: {
   graph: ArchitectureGraph;
   root: string;
@@ -33,23 +56,8 @@ export function runRules(options: {
   const { graph, root, config, fastMode = false, ruleFilter } = options;
   const diagnostics: Diagnostic[] = [];
 
-  const rules = allRules.filter((r) => {
-    if (ruleFilter && ruleFilter.length > 0 && !ruleFilter.includes(r.id)) {
-      return false;
-    }
-    const setting = config.rules?.[r.id];
-    if (setting === "off") return false;
-    if (fastMode && r.requiresTypeInfo) return false;
-
-    // ARCH005 cannot be upgraded above info
-    if (r.id === "ARCH005" && setting) {
-      const sev = Array.isArray(setting) ? setting[0] : setting;
-      if (sev === "warning" || sev === "error") {
-        // ignore upgrade — still run as info
-      }
-    }
-    return true;
-  });
+  // ARCH005 stays info even when configured higher; enforced in report().
+  const rules = resolveActiveRules({ config, fastMode, ruleFilter });
 
   const ctx: AnalysisContext = {
     root,

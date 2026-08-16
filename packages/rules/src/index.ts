@@ -2,6 +2,8 @@ export {
   allRules,
   getRule,
   runRules,
+  resolveActiveRules,
+  type RuleSelection,
   arch001,
   arch002,
   arch003,

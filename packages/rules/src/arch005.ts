@@ -1,15 +1,10 @@
-import fs from "node:fs";
-import ts from "typescript";
 import type { AnalysisContext, Rule, RuleListener } from "@next-architect/core";
 import {
   computeConfidence,
   isDtsOrGeneratedPath,
   isTestOrStoriesPath,
 } from "@next-architect/core";
-import {
-  extractAwaits,
-  findWaterfallCandidates,
-} from "@next-architect/graph";
+import { findWaterfallCandidates } from "@next-architect/graph";
 
 /** ARCH005: base is capped at 0.80 and must not be raised via config. */
 export const arch005: Rule = {
@@ -40,7 +35,7 @@ export const arch005: Rule = {
     return {
       onModule(node) {
         if (node.isExternal) return;
-        if (!node.path || !fs.existsSync(node.path)) return;
+        if (!node.awaits?.length) return;
 
         // Prefer server components / route handlers for data fetching advice
         if (
@@ -53,23 +48,7 @@ export const arch005: Rule = {
           if (node.environment === "client") return;
         }
 
-        let content: string;
-        try {
-          content = fs.readFileSync(node.path, "utf8");
-        } catch {
-          return;
-        }
-
-        const sf = ts.createSourceFile(
-          node.path,
-          content,
-          ts.ScriptTarget.Latest,
-          true,
-          node.path.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
-        );
-
-        const awaits = extractAwaits(sf);
-        const candidates = findWaterfallCandidates(node.id, awaits);
+        const candidates = findWaterfallCandidates(node.id, node.awaits);
 
         for (const c of candidates) {
           // Cap confidence at 0.8 always
