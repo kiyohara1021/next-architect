@@ -11,6 +11,7 @@ npx next-architect check --rule ARCH001
 npx next-architect check --format json
 npx next-architect check --ci
 npx next-architect explain ARCH002      # ルールの解説
+npx next-architect explain score        # スコア算出式の表示（07-scoring.md §7.4）
 ```
 
 v0.2 以降:
@@ -55,20 +56,20 @@ npx next-architect mcp                  # MCP サーバとして起動
 next-architect v0.1.0
 
 Analyzing Next.js application...
-  ✓ Project detected          next@15.x, App Router
+  ✓ Project detected          next@16.x, App Router
   ✓ 183 modules analyzed
   ✓ 42 routes analyzed
   ✓ Server/Client graph built  (31 client, 118 server, 34 shared)
   ✓ Dependency graph built
   ⚠ 3 imports could not be resolved   (see --verbose)
 
-Architecture Score: 82/100
+Architecture Score: 81/100
 
 WARNING  ARCH001  Potential unnecessary Client Component
   components/UserName.tsx:1
 
     "use client" is present, but no client-only features were detected.
-    Confidence: 96%
+    Confidence: 95%
     → Remove "use client"
 
 WARNING  ARCH002  Client Boundary Pollution
@@ -80,7 +81,7 @@ WARNING  ARCH002  Client Boundary Pollution
           ↓ db
     lib/database.ts             [client]  imports "pg"
 
-    Confidence: 91%
+    Confidence: 85%
     → Move data access behind a Server Component boundary.
 
 INFO  ARCH005  Potential request waterfall
@@ -88,13 +89,13 @@ INFO  ARCH005  Potential request waterfall
 
     getUser() → getOrders()
     getProducts() appears independent.
-    Confidence: 74%
+    Confidence: 80%
 
 ────────────────────────────────────────
 2 warnings   1 info   0 errors
 3 diagnostics hidden (below confidence threshold) — use --min-confidence 0
 
-Architecture Score: 82/100
+Architecture Score: 81/100
   This score represents detected architecture risks, not application quality.
 
 Run `next-architect explain ARCH002` for details.

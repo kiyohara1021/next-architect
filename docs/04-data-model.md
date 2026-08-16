@@ -40,6 +40,35 @@ export interface EnvReason {
 }
 ```
 
+```ts
+export type RuleCategory =
+  | "boundary"
+  | "dependency"
+  | "data"
+  | "route"
+  | "bundle"
+  | "security";
+
+/** 3.4 の client-only 機能シグナル */
+export interface ClientSignal {
+  kind:
+    | "hook"            // useState など
+    | "react-api"       // createContext など
+    | "event-handler"   // JSX の on*
+    | "browser-api"     // window / document
+    | "next-client-api" // useRouter など
+    | "class-component"
+    | "transitive-hook" // 規則 C1
+    | "client-module"   // 規則 C2 / C3
+    | "client-only-import"; // 規則 C4
+  strength: "strong" | "weak";  // weak は単独では client 根拠にしない
+  name: string;                  // "useState" など
+  loc?: SourceLocation;
+  /** transitive の場合、辿った経路 */
+  via?: string[];
+}
+```
+
 `environmentReason` を**必須**にしているのが設計上の要点。
 「なぜ client なのか」を答えられないツールは、ARCH002 の経路表示ができない。
 
@@ -139,6 +168,11 @@ export interface Fix {
 confidence = base × Π(penalties)
 ```
 
+> **`base` は上限値である。** penalties はすべて 1 未満なので、
+> **診断の confidence が `base` を超えることは原理的にない。**
+> 各ルールの `base` は「減衰要因が一切ない理想ケースでの値」を意味する。
+> 設定ファイルから `base` を引き上げることはできない。
+
 | 減衰要因 | 係数 |
 | --- | --- |
 | 経路に未解決 import がある | × 0.5 |
@@ -148,6 +182,14 @@ confidence = base × Π(penalties)
 | 対象ファイルがテスト / stories / mock | × 0.3 |
 | 対象が `.d.ts` または生成物 | × 0.1 |
 | 型情報なしパス（`--fast`）で得た結果 | × 0.85 |
+
+計算例（ARCH002、base 0.85）:
+
+```
+経路が barrel 経由（shakeable）      0.85 × 0.6 = 0.51   → 既定では非表示
+経路に namespace import が 1 つ      0.85 × 0.8 = 0.68   → 既定では非表示
+減衰要因なし                          0.85         = 0.85 → 表示
+```
 
 ### しきい値
 
@@ -184,6 +226,20 @@ export interface Limitation {
   kind: "unresolved-import" | "unsupported-router" | "dynamic-config" | "parse-error";
   file?: string;
   detail: string;
+}
+
+export interface ArchitectureScore {
+  /** 0..100。算出不能なら null（→ 07-scoring.md §7.5） */
+  overall: number | null;
+  categories: Array<{
+    category: RuleCategory;
+    score: number | null;   // 有効ルールが 0 なら null（加重平均から除外）
+    weight: number;         // 0..1
+    activeRuleCount: number;
+  }>;
+  /** 解析できたモジュールの割合。0.9 未満なら overall は null */
+  coverage: number;
+  formulaVersion: string;   // 算出式のバージョン（メジャーでのみ変わる）
 }
 ```
 

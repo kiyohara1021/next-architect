@@ -2,13 +2,21 @@
 
 v0.1 は **5 ルールを非常に高い品質で**出す。数で勝負しない。
 
-| ID | 名前 | Category | 既定 severity | base confidence | fix |
-| --- | --- | --- | --- | --- | --- |
-| ARCH001 | Unnecessary Client Component | boundary | warning | 0.95 | ✅ |
-| ARCH002 | Client Boundary Pollution | dependency | warning | 0.85 | ❌ |
-| ARCH003 | Server Module in Client Graph | boundary | **error** | 0.98 | ❌ |
-| ARCH004 | Large Dependency in Client Bundle | bundle | info | 0.80 | ❌ |
-| ARCH005 | Potential Request Waterfall | data | info | 0.70（上限 0.8） | ❌ |
+`base confidence` は**上限値**であり、減衰要因があれば必ずこれを下回る（[04-data-model.md §4.5](04-data-model.md)）。
+以下の出力例はすべて「減衰要因なし」のケースなので、値は `base` と一致する。
+
+| ID | 名前 | Category | 既定 severity | base confidence | fix | 導入 |
+| --- | --- | --- | --- | --- | --- | --- |
+| ARCH001 | Unnecessary Client Component | boundary | warning | 0.95 | ✅ | v0.1 |
+| ARCH002 | Client Boundary Pollution | dependency | warning | 0.85 | ❌ | v0.1 |
+| ARCH003 | Server Module in Client Graph | boundary | **error** | 0.98 | ❌ | v0.1 |
+| ARCH004 | Large Dependency in Client Bundle | bundle | info | 0.80 | ❌ | v0.1 |
+| ARCH005 | Potential Request Waterfall | data | info | 0.80（引き上げ不可） | ❌ | v0.1 |
+| ARCH000 | Unused Suppression | （メタ） | info | 1.00 | ✅ | **v0.2** |
+
+ARCH000 は抑制コメントの腐敗検出（[06-cli.md §6.6](06-cli.md)）。
+抑制構文そのものが v0.2 で入るため、**このルールも v0.2**（[09-roadmap.md](09-roadmap.md)）。
+カテゴリを持たないため**スコアには算入しない**。
 
 ---
 
@@ -37,7 +45,7 @@ components/UserName.tsx:1
     ✗ client-only imports
     ✗ transitively client-only custom hooks
 
-  Confidence: 96%
+  Confidence: 95%
   → Remove "use client"
 ```
 
@@ -46,12 +54,15 @@ components/UserName.tsx:1
 以下は**報告しない**。実装時にこのリストをテストケースに落とす。
 
 1. import 解決に失敗したモジュールが依存経路にある
-2. `export default` されたコンポーネントが `next/dynamic` の `{ ssr: false }` で読まれている
-3. ファイルが `error.tsx` / `global-error.tsx`（仕様上 client 必須）
-4. `createContext` を含む（Provider は client 必須）
-5. サードパーティの client-only パッケージを import している（規則 C3）
-6. `"use client"` の直後にコメントで `next-architect-disable` がある
-7. ファイルが `node_modules` 由来
+2. ファイルが `error.tsx` / `global-error.tsx`（仕様上 client 必須）
+3. `createContext` を含む（Provider は client 必須）
+4. サードパーティの client-only パッケージを import している（規則 C3）
+5. `"use client"` の直後にコメントで `next-architect-disable` がある
+6. ファイルが `node_modules` 由来
+
+> `next/dynamic` の `{ ssr: false }` で読まれているケースは、**除外条件に入れない**。
+> その呼び出し元は必ず Client Component なので、伝播規則 P1 によって
+> どのみち client に彩色され、判定木に到達しない。
 
 ### なぜ「単に `"use client"` があったら警告」ではダメか
 
@@ -113,7 +124,7 @@ components/ProductList.tsx
     - environment poisoning
     - server-only code exposure
 
-  Confidence: 91%
+  Confidence: 85%
   → Move data access behind a Server Component boundary,
     or add `import "server-only"` to lib/database.ts to make this an error.
 ```
@@ -219,7 +230,7 @@ app/dashboard/page.tsx:18
       getProducts(),
     ]);
 
-  Confidence: 74%
+  Confidence: 80%
 ```
 
 ### 構造的な制約（仕様として固定）
@@ -228,7 +239,7 @@ app/dashboard/page.tsx:18
 動的 API の呼び出し順が絡む。したがって:
 
 - severity は **`info` 固定**。設定でも `warning` 以上に昇格させない
-- confidence 上限 **0.8**
+- `base` = **0.80**。設定から引き上げられない（他ルールと違い、ここは明示的に固定）
 - **`--fix` 対象外**
 - メッセージは常に "Potential" / "Possible" を使い、断定しない
 

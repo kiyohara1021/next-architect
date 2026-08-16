@@ -12,7 +12,7 @@ packages/
 ├── graph/         @next-architect/graph        … 5 種のグラフ構築
 ├── rules/         @next-architect/rules        … ARCHxxx 実装
 ├── reporters/     @next-architect/reporters    … pretty / json / html / sarif
-└── integrations/  @next-architect/mcp          … MCP サーバ、GitHub Action
+└── mcp/           @next-architect/mcp          … MCP サーバ（GitHub Action は cli の薄いラッパ）
 ```
 
 公開する npm パッケージは `next-architect`（cli を再エクスポートするファサード）1 つ。
@@ -99,7 +99,10 @@ app/**/default.*                 → Parallel Route
 
 - `error.tsx` / `global-error.tsx` は Next.js の仕様上 Client Component。`"use client"` がなくても client として扱う
 - `route.ts` は常に server
-- `middleware.ts` は Edge runtime。server でも client でもない第 3 の環境として `edge` を持つ
+- `middleware.ts` は client ではないが、通常の Server Component とも実行環境が異なる。
+  **runtime を決め打ちしない**: Next.js 15.5 以降は Node.js runtime の middleware も選べるため、
+  `export const config = { runtime: ... }` を読んで `edge` / `server` を決める。
+  静的に読めない場合は `edge`（制約が厳しい側）を仮定し、`limitations` に記録する
 
 ## 2.6 キャッシュと増分解析
 

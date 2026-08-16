@@ -32,7 +32,9 @@
 "client-only" を import している                   → client（強制）
 app/**/route.ts                                    → server
 app/**/error.tsx, global-error.tsx                 → client（暗黙）
-middleware.ts                                      → edge
+middleware.ts                                      → edge または server
+                                                     （config.runtime を読む。
+                                                       不明なら edge を仮定し limitations に記録）
 app/**/page.tsx, layout.tsx（"use client" なし）   → server
 それ以外                                            → shared（未確定）
 ```
@@ -140,8 +142,9 @@ lib/date.ts   lib/database.ts   lib/mailer.ts   ...
 規則 C1: import した custom hook が（推移的に）直接シグナルを含む → client 必要
 規則 C2: import したモジュールが "use client" を持つ            → client 必要
 規則 C3: import した npm パッケージが client-only               → client 必要
-         判定: package.json の exports に "react-server" 条件がない かつ
-               パッケージ内に "use client" ディレクティブがある
+         判定: 解決先のエントリファイルに "use client" ディレクティブがある
+         （"react-server" 条件の有無は判定に使わない。その不在は
+           「サーバ非対応」を意味せず、指定していないだけの場合が大半のため）
 規則 C4: import "client-only" がある                            → client 必要
 ```
 
