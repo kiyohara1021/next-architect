@@ -1,0 +1,30 @@
+{
+  "name": "@next-architect/rules",
+  "version": "0.1.0",
+  "description": "Architecture rules ARCH001–005 for next-architect",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@next-architect/core": "workspace:*",
+    "@next-architect/graph": "workspace:*",
+    "@next-architect/parser": "workspace:*",
+    "typescript": "^5.8.2"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.8"
+  },
+  "license": "MIT"
+}

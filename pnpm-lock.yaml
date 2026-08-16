@@ -44,6 +44,25 @@ importers:
         specifier: ^5.8.2
         version: 5.9.3
 
+  packages/rules:
+    dependencies:
+      '@next-architect/core':
+        specifier: workspace:*
+        version: link:../core
+      '@next-architect/graph':
+        specifier: workspace:*
+        version: link:../graph
+      '@next-architect/parser':
+        specifier: workspace:*
+        version: link:../parser
+      typescript:
+        specifier: ^5.8.2
+        version: 5.9.3
+    devDependencies:
+      vitest:
+        specifier: ^3.0.8
+        version: 3.2.7(@types/node@22.20.1)
+
 packages:
 
   '@esbuild/aix-ppc64@0.28.2':
