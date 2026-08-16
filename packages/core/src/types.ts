@@ -88,12 +88,34 @@ export type RouteKind =
   | "route"
   | "default";
 
+/**
+ * A single `await` extracted from an async function (docs/03 §3.5).
+ * Produced by the parser so ARCH005 never re-reads or re-parses source.
+ */
+export interface AwaitInfo {
+  id: string;
+  /** Bound identifier names from this await (const x = await ...). */
+  boundNames: string[];
+  /** Identifiers referenced in the await argument. */
+  referencedNames: string[];
+  /** The awaited call name if identifiable (getUser). */
+  callName?: string;
+  loc: SourceLocation;
+  /** Structural exclusion reasons (D3). */
+  excluded: boolean;
+  excludeReason?: string;
+  /** Return value appears unused (void / no binding). */
+  unusedResult: boolean;
+}
+
 export interface ModuleNode {
   id: string;
   path: string;
   environment: Environment;
   environmentReason: EnvReason;
   directives: string[];
+  /** Location of the leading file directive, covering the whole statement. */
+  directiveLoc?: SourceLocation;
   imports: ImportEdge[];
   exports: ExportInfo[];
   isRoute: boolean;
@@ -110,6 +132,8 @@ export interface ModuleNode {
   hasServerActionDirective?: boolean;
   /** Package name when external. */
   packageName?: string;
+  /** Awaits extracted at parse time (cached); undefined when not analyzed. */
+  awaits?: AwaitInfo[];
 }
 
 export interface RouteSegment {
@@ -172,6 +196,12 @@ export interface Diagnostic {
   path?: DiagnosticPath;
   fix?: Fix;
   suppressed?: "config" | "inline" | "below-threshold";
+  /** Approximate unpacked size of the reported package (docs/05 ARCH004). */
+  sizeBytes?: number;
+  /** Always "unpacked" — never bundled/minified/gzipped size. */
+  sizeSource?: "unpacked";
+  /** Named exports the client graph actually pulls from the package. */
+  usedExports?: string[];
 }
 
 export interface Limitation {
@@ -185,6 +215,13 @@ export interface Limitation {
   detail: string;
 }
 
+/** Why `overall` is null (docs/07 §7.5). */
+export type ScoreUnavailableReason =
+  | "partial-rules"
+  | "fast-mode"
+  | "low-coverage"
+  | "no-active-rules";
+
 export interface ArchitectureScore {
   overall: number | null;
   categories: Array<{
@@ -195,6 +232,8 @@ export interface ArchitectureScore {
   }>;
   coverage: number;
   formulaVersion: string;
+  /** Set when overall is null, so the reporter can say why. */
+  unavailableReason?: ScoreUnavailableReason;
 }
 
 export interface AnalysisResult {
@@ -206,6 +245,10 @@ export interface AnalysisResult {
     router: "app" | "pages" | "hybrid";
     moduleCount: number;
     routeCount: number;
+    /** Environment breakdown of analyzed (non-external) modules. */
+    clientModuleCount?: number;
+    serverModuleCount?: number;
+    sharedModuleCount?: number;
   };
   diagnostics: Diagnostic[];
   score: ArchitectureScore;

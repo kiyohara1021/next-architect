@@ -3,6 +3,7 @@ import type {
   ArchitectureScore,
   Diagnostic,
   RuleCategory,
+  ScoreUnavailableReason,
   Severity,
 } from "./types.js";
 import { SCORE_FORMULA_VERSION } from "./rule.js";
@@ -30,15 +31,28 @@ const RULE_CATEGORIES: Record<string, RuleCategory> = {
   ARCH005: "data",
 };
 
-/** Active rule counts per category for v0.1. */
-const V01_ACTIVE_RULES: Record<RuleCategory, number> = {
-  boundary: 2,
-  dependency: 1,
-  data: 1,
-  route: 0,
-  bundle: 1,
-  security: 0,
-};
+/** Rule ids shipped in v0.1 — the default when no filter is applied. */
+export const V01_RULE_IDS = Object.keys(RULE_CATEGORIES);
+
+/**
+ * Count rules that actually ran, per category. A category with zero active
+ * rules is excluded from the score rather than counted as 100 (docs/07).
+ */
+function activeRuleCounts(ruleIds: string[]): Record<RuleCategory, number> {
+  const counts: Record<RuleCategory, number> = {
+    boundary: 0,
+    dependency: 0,
+    data: 0,
+    route: 0,
+    bundle: 0,
+    security: 0,
+  };
+  for (const id of ruleIds) {
+    const category = RULE_CATEGORIES[id];
+    if (category) counts[category] += 1;
+  }
+  return counts;
+}
 
 function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
@@ -54,6 +68,10 @@ export function computeScore(options: {
   clientModuleCount: number;
   coverage: number;
   partialAnalysis?: boolean;
+  /** Rules that actually ran; defaults to all v0.1 rules. */
+  activeRuleIds?: string[];
+  /** Distinguishes `--rule` from `--fast` in the unavailable reason. */
+  fastMode?: boolean;
 }): ArchitectureScore {
   const {
     diagnostics,
@@ -61,12 +79,16 @@ export function computeScore(options: {
     clientModuleCount,
     coverage,
     partialAnalysis = false,
+    activeRuleIds = V01_RULE_IDS,
+    fastMode = false,
   } = options;
+
+  const counts = activeRuleCounts(activeRuleIds);
 
   const categories = (
     Object.keys(CATEGORY_WEIGHTS) as RuleCategory[]
   ).map((category) => {
-    const activeRuleCount = V01_ACTIVE_RULES[category];
+    const activeRuleCount = counts[category];
     if (activeRuleCount === 0) {
       return {
         category,
@@ -102,7 +124,13 @@ export function computeScore(options: {
   });
 
   let overall: number | null = null;
-  if (!partialAnalysis && coverage >= 0.9) {
+  let unavailableReason: ScoreUnavailableReason | undefined;
+
+  if (partialAnalysis) {
+    unavailableReason = fastMode ? "fast-mode" : "partial-rules";
+  } else if (coverage < 0.9) {
+    unavailableReason = "low-coverage";
+  } else {
     let weightedSum = 0;
     let weightSum = 0;
     for (const c of categories) {
@@ -112,6 +140,8 @@ export function computeScore(options: {
     }
     if (weightSum > 0) {
       overall = Math.round(weightedSum / weightSum);
+    } else {
+      unavailableReason = "no-active-rules";
     }
   }
 
@@ -120,6 +150,7 @@ export function computeScore(options: {
     categories,
     coverage,
     formulaVersion: SCORE_FORMULA_VERSION,
+    ...(unavailableReason ? { unavailableReason } : {}),
   };
 }
 
