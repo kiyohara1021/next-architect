@@ -183,7 +183,7 @@ components/Chart.tsx:3
   huge-library
 
   Estimated unpacked size: ~428 KB   (approximate; see notes)
-  Used exports: 1 of 87
+  Used exports: Chart
 
   Consider:
     - import the specific submodule directly
@@ -198,6 +198,19 @@ components/Chart.tsx:3
 - `node_modules` の実ファイルサイズであり、**バンドル後・minify 後・gzip 後のサイズではない**
 - tree-shaking の結果を反映しない
 - 出力に必ず `approximate` と明記し、`--format json` では `sizeBytes` に加えて `sizeSource: "unpacked"` を持たせる
+
+### 使用 export の表示（v0.1 は「使っている名前」のみ）
+
+`Used exports` は **client graph が実際に import している名前**を出す。
+`1 of 87` のような**比率は出さない**。
+
+分母（パッケージ自身の export 総数）を出すには、エントリの `.d.ts` や
+再エクスポート連鎖をたどる型解決が必要で、JS 実体のみのパッケージや
+条件付き exports では正しい数が得られない。
+**間違った分母は分母が無いことより悪い**（[10-quality-strategy.md](10-quality-strategy.md) の「迷ったら黙る」）。
+
+比率の表示は型情報の導入とセットで v0.2 以降に扱う（[09-roadmap.md](09-roadmap.md)）。
+`--format json` では `usedExports: string[]` として出す。
 
 正確なサイズが欲しいユーザーには `@next/bundle-analyzer` を案内する。**競合しに行かない。**
 

@@ -35,6 +35,7 @@ ARCH001 の偽陽性 0 は厳しいが、**キラー機能が誤爆したら終�
 | Reporter | HTML レポート、SARIF |
 | CI | GitHub Actions + Code Scanning 連携 |
 | Config | `next-architect.config.ts`、抑制構文 |
+| ARCH004 | パッケージの export 総数の解決（`Used exports: n of m` の分母）。型解決とセット |
 
 HTML レポートはこの段階で入れる。**ARCH002 の到達経路は図で見せると圧倒的に伝わる**ため、
 スクリーンショットが README の説得力になる（＝ Star に効く）。
