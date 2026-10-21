@@ -7,3 +7,6 @@ coverage/
 *.log
 .turbo/
 corpus/perf/1k-modules/
+
+# OSS corpus checkout (fetched on demand, never vendored)
+corpus/oss/.cache/

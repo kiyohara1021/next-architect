@@ -20,6 +20,9 @@
     "corpus:arch005": "node corpus/arch005/run.mjs",
     "corpus:smoke": "node corpus/smoke/run.mjs",
     "corpus:perf": "node corpus/perf/run.mjs",
+    "corpus:oss:fetch": "node corpus/oss/fetch.mjs",
+    "corpus:oss": "node corpus/oss/run.mjs",
+    "corpus:diff": "node corpus/oss/diff.mjs",
     "corpus:all": "pnpm corpus:arch001 && pnpm corpus:arch002 && pnpm corpus:arch003 && pnpm corpus:arch004 && pnpm corpus:arch005 && pnpm corpus:smoke && pnpm corpus:perf",
     "clean": "pnpm -r exec rm -rf dist"
   },
