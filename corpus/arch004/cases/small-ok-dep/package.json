@@ -2,7 +2,7 @@
   "name": "corpus-arch004-small-ok-dep",
   "private": true,
   "dependencies": {
-    "next": "15.5.27",
+    "next": "15.5.28",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "corpus-tiny-lib": "0.0.0"
