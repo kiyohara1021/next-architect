@@ -1,0 +1,44 @@
+{
+  "description": "OSS corpus for false-positive measurement (docs/10 §10.2 ②). Pinned App Router examples authored by the Next.js team — code that is idiomatic by construction, so any finding here is either a real architectural issue or a bug in next-architect.",
+  "source": {
+    "repo": "vercel/next.js",
+    "url": "https://github.com/vercel/next.js",
+    "commit": "dd76599c3432a0a72d6b4423006eab7eff60856a",
+    "ref": "canary",
+    "license": "MIT",
+    "licenseUrl": "https://github.com/vercel/next.js/blob/canary/license.md",
+    "pinnedAt": "2026-08-16"
+  },
+  "apps": [
+    {
+      "id": "with-supabase",
+      "path": "examples/with-supabase",
+      "why": "Largest App Router example. Auth with server/client split — the boundary cases ARCH001-003 are built for."
+    },
+    {
+      "id": "with-stripe-typescript",
+      "path": "examples/with-stripe-typescript",
+      "why": "Server SDK alongside client checkout components. Prime ARCH002 false-positive risk."
+    },
+    {
+      "id": "prisma-postgres",
+      "path": "examples/prisma-postgres",
+      "why": "DB client in server code. ARCH002's server-oriented heuristics must stay silent here."
+    },
+    {
+      "id": "with-dynamic-import",
+      "path": "examples/with-dynamic-import",
+      "why": "next/dynamic and lazy boundaries — reachability classification and ARCH004."
+    },
+    {
+      "id": "with-styled-components",
+      "path": "examples/with-styled-components",
+      "why": "A client-only library that legitimately requires \"use client\". ARCH001 must not fire."
+    },
+    {
+      "id": "image-component",
+      "path": "examples/image-component",
+      "why": "Plain multi-route App Router app with no data layer — the quiet baseline."
+    }
+  ]
+}
