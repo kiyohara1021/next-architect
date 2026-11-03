@@ -47,6 +47,41 @@ function arch001Warnings(diagnostics) {
   return arch001Findings(diagnostics).filter((d) => d.severity === "warning");
 }
 
+/**
+ * Materialize a client-only npm package: no "use client" directive, but its
+ * own code calls a client-only React API. `styled-components` is shaped
+ * exactly like this, and it produced three ARCH001 false positives on
+ * Next.js's own example (corpus/oss/REVIEW.md, D1).
+ *
+ * @param {string} caseRoot
+ * @param {string} caseId
+ */
+function ensureCaseVendors(caseRoot, caseId) {
+  if (caseId !== "client-only-package") return;
+
+  const pkgDir = path.join(caseRoot, "node_modules", "corpus-ui-kit");
+  fs.mkdirSync(pkgDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(pkgDir, "package.json"),
+    JSON.stringify(
+      { name: "corpus-ui-kit", version: "0.0.0", private: true, main: "index.js" },
+      null,
+      2,
+    ) + "\n",
+  );
+  fs.writeFileSync(
+    path.join(pkgDir, "index.js"),
+    [
+      "const React = require('react');",
+      "const ThemeContext = React.createContext({ color: 'red' });",
+      "exports.createTheme = function createTheme() {",
+      "  return React.useContext(ThemeContext);",
+      "};",
+      "",
+    ].join("\n"),
+  );
+}
+
 let failed = false;
 let falsePositives = 0;
 let truePositives = 0;
@@ -64,6 +99,8 @@ for (const c of manifest.cases) {
     failed = true;
     continue;
   }
+
+  ensureCaseVendors(root, c.id);
 
   const outcome = await runCheck({
     root,

@@ -132,6 +132,11 @@ export interface ModuleNode {
   hasServerActionDirective?: boolean;
   /** Package name when external. */
   packageName?: string;
+  /**
+   * External package judged client-only by C3 (docs/03 §3.4) — either it
+   * declares `"use client"` or its own code calls client-only React APIs.
+   */
+  isClientOnlyPackage?: boolean;
   /** Awaits extracted at parse time (cached); undefined when not analyzed. */
   awaits?: AwaitInfo[];
 }

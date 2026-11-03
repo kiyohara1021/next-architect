@@ -125,6 +125,8 @@ function findPath(
     if (!mod) continue;
     for (const edge of mod.imports) {
       if (edge.isTypeOnly) continue;
+      // P2: the path we display must not run through a Server Action either.
+      if (ctx.getModule(edge.to)?.hasServerActionDirective) continue;
       queue.push({
         id: edge.to,
         path: [...cur.path, edge.to],
@@ -261,7 +263,11 @@ export const arch002: Rule = {
           }
 
           for (const imp of mod.imports) {
-            if (!imp.isTypeOnly && !imp.unresolved) queue.push(imp.to);
+            if (imp.isTypeOnly || imp.unresolved) continue;
+            // P2: a "use server" module is a boundary, not a step in the
+            // client graph (docs/03 §3.3).
+            if (ctx.getModule(imp.to)?.hasServerActionDirective) continue;
+            queue.push(imp.to);
           }
         }
       },
