@@ -76,7 +76,7 @@ export function generatePerfCorpus({ force: doForce = false, target = TARGET } =
         name: "corpus-perf-1k-modules",
         private: true,
         dependencies: {
-          next: "15.0.0",
+          next: "15.5.27",
           react: "19.0.0",
           "react-dom": "19.0.0",
         },
