@@ -37,6 +37,6 @@
     "url": "https://github.com/kiyohara1021/next-architect"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   }
 }
