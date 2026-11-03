@@ -1,0 +1,45 @@
+name: OSS corpus
+
+# Not a pull-request gate. This job clones a third-party repository and installs
+# its dependencies, so it fails for reasons that have nothing to do with a given
+# change. Keeping it on a schedule means a red run points at our rules or at the
+# pinned upstream — never at an unrelated PR.
+
+on:
+  schedule:
+    # 03:00 UTC daily
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: oss-corpus
+  cancel-in-progress: true
+
+jobs:
+  corpus:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - name: Fetch pinned OSS corpus
+        run: pnpm corpus:oss:fetch
+
+      - name: Report density and unresolved rate
+        run: pnpm corpus:oss
+
+      - name: Diff against committed snapshot
+        run: pnpm corpus:diff

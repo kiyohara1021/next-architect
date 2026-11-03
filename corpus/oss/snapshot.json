@@ -1,0 +1,323 @@
+{
+  "description": "Committed baseline for `pnpm corpus:diff`. Regenerate with `pnpm corpus:oss --update` and review every delta (docs/10 §10.2 ③).",
+  "source": {
+    "repo": "vercel/next.js",
+    "commit": "dd76599c3432a0a72d6b4423006eab7eff60856a"
+  },
+  "apps": [
+    {
+      "id": "with-supabase",
+      "moduleCount": 42,
+      "routeCount": 8,
+      "clientModuleCount": 15,
+      "unresolvedImports": 1,
+      "unresolvedRate": 0.0238,
+      "diagnosticsPer100Modules": 35.71,
+      "rules": {
+        "ARCH001": 0,
+        "ARCH002": 0,
+        "ARCH003": 0,
+        "ARCH004": 15,
+        "ARCH005": 0
+      },
+      "findings": [
+        {
+          "ruleId": "ARCH004",
+          "severity": "info",
+          "file": "components/forgot-password-form.tsx",
+          "line": 3,
+          "confidence": 0.8,
+          "message": "Large dependency enters client bundle"
+        },
+        {
+          "ruleId": "ARCH004",
+          "severity": "info",
+          "file": "components/forgot-password-form.tsx",
+          "line": 4,
+          "confidence": 0.8,
+          "message": "Large dependency enters client bundle"
+        },
+        {
+          "ruleId": "ARCH004",
+          "severity": "info",
+          "file": "components/login-form.tsx",
+          "line": 3,
+          "confidence": 0.8,
+          "message": "Large dependency enters client bundle"
+        },
+        {
+          "ruleId": "ARCH004",
+          "severity": "info",
+          "file": "components/login-form.tsx",
+          "line": 4,
+          "confidence": 0.8,
+          "message": "Large dependency enters client bundle"
+        },
+        {
+          "ruleId": "ARCH004",
+          "severity": "info",
+          "file": "components/logout-button.tsx",
+          "line": 3,
+          "confidence": 0.8,
+          "message": "Large dependency enters client bundle"
+        },
+        {
+          "ruleId": "ARCH004",
+          "severity": "info",
+          "file": "components/logout-button.tsx",
+          "line": 4,
+          "confidence": 0.8,
+          "message": "Large dependency enters client bundle"
+        },
+        {
+          "ruleId": "ARCH004",
+          "severity": "info",
+          "file": "components/sign-up-form.tsx",
+          "line": 3,
+          "confidence": 0.8,
+          "message": "Large dependency enters client bundle"
+        },
+        {
+          "ruleId": "ARCH004",
+          "severity": "info",
+          "file": "components/sign-up-form.tsx",
+          "line": 4,
+          "confidence": 0.8,
+          "message": "Large dependency enters client bundle"
+        },
+        {
+          "ruleId": "ARCH004",
+          "severity": "info",
+          "file": "components/theme-switcher.tsx",
+          "line": 11,
+          "confidence": 0.8,
+          "message": "Large dependency enters client bundle"
+        },
+        {
+          "ruleId": "ARCH004",
+          "severity": "info",
+          "file": "components/theme-switcher.tsx",
+          "line": 3,
+          "confidence": 0.8,
+          "message": "Large dependency enters client bundle"
+        },
+        {
+          "ruleId": "ARCH004",
+          "severity": "info",
+          "file": "components/tutorial/code-block.tsx",
+          "line": 4,
+          "confidence": 0.8,
+          "message": "Large dependency enters client bundle"
+        },
+        {
+          "ruleId": "ARCH004",
+          "severity": "info",
+          "file": "components/ui/checkbox.tsx",
+          "line": 5,
+          "confidence": 0.8,
+          "message": "Large dependency enters client bundle"
+        },
+        {
+          "ruleId": "ARCH004",
+          "severity": "info",
+          "file": "components/ui/checkbox.tsx",
+          "line": 7,
+          "confidence": 0.8,
+          "message": "Large dependency enters client bundle"
+        },
+        {
+          "ruleId": "ARCH004",
+          "severity": "info",
+          "file": "components/update-password-form.tsx",
+          "line": 3,
+          "confidence": 0.8,
+          "message": "Large dependency enters client bundle"
+        },
+        {
+          "ruleId": "ARCH004",
+          "severity": "info",
+          "file": "components/update-password-form.tsx",
+          "line": 4,
+          "confidence": 0.8,
+          "message": "Large dependency enters client bundle"
+        }
+      ]
+    },
+    {
+      "id": "with-stripe-typescript",
+      "moduleCount": 25,
+      "routeCount": 7,
+      "clientModuleCount": 10,
+      "unresolvedImports": 1,
+      "unresolvedRate": 0.04,
+      "diagnosticsPer100Modules": 24,
+      "rules": {
+        "ARCH001": 0,
+        "ARCH002": 0,
+        "ARCH003": 0,
+        "ARCH004": 6,
+        "ARCH005": 0
+      },
+      "findings": [
+        {
+          "ruleId": "ARCH004",
+          "severity": "info",
+          "file": "app/components/CheckoutForm.tsx",
+          "line": 12,
+          "confidence": 0.8,
+          "message": "Large dependency enters client bundle"
+        },
+        {
+          "ruleId": "ARCH004",
+          "severity": "info",
+          "file": "app/components/CheckoutForm.tsx",
+          "line": 13,
+          "confidence": 0.8,
+          "message": "Large dependency enters client bundle"
+        },
+        {
+          "ruleId": "ARCH004",
+          "severity": "info",
+          "file": "app/components/CheckoutForm.tsx",
+          "line": 14,
+          "confidence": 0.8,
+          "message": "Large dependency enters client bundle"
+        },
+        {
+          "ruleId": "ARCH004",
+          "severity": "info",
+          "file": "app/components/ElementsForm.tsx",
+          "line": 18,
+          "confidence": 0.8,
+          "message": "Large dependency enters client bundle"
+        },
+        {
+          "ruleId": "ARCH004",
+          "severity": "info",
+          "file": "app/components/ElementsForm.tsx",
+          "line": 19,
+          "confidence": 0.8,
+          "message": "Large dependency enters client bundle"
+        },
+        {
+          "ruleId": "ARCH004",
+          "severity": "info",
+          "file": "app/components/ElementsForm.tsx",
+          "line": 6,
+          "confidence": 0.8,
+          "message": "Large dependency enters client bundle"
+        }
+      ]
+    },
+    {
+      "id": "prisma-postgres",
+      "moduleCount": 13,
+      "routeCount": 6,
+      "clientModuleCount": 2,
+      "unresolvedImports": 3,
+      "unresolvedRate": 0.2308,
+      "diagnosticsPer100Modules": 15.38,
+      "rules": {
+        "ARCH001": 1,
+        "ARCH002": 0,
+        "ARCH003": 0,
+        "ARCH004": 0,
+        "ARCH005": 1
+      },
+      "findings": [
+        {
+          "ruleId": "ARCH001",
+          "severity": "warning",
+          "file": "app/Header.tsx",
+          "line": 1,
+          "confidence": 0.95,
+          "message": "Potential unnecessary Client Component"
+        },
+        {
+          "ruleId": "ARCH005",
+          "severity": "info",
+          "file": "app/api/posts/route.ts",
+          "line": 18,
+          "confidence": 0.8,
+          "message": "Potential request waterfall"
+        }
+      ]
+    },
+    {
+      "id": "with-dynamic-import",
+      "moduleCount": 8,
+      "routeCount": 1,
+      "clientModuleCount": 7,
+      "unresolvedImports": 0,
+      "unresolvedRate": 0,
+      "diagnosticsPer100Modules": 0,
+      "rules": {
+        "ARCH001": 0,
+        "ARCH002": 0,
+        "ARCH003": 0,
+        "ARCH004": 0,
+        "ARCH005": 0
+      },
+      "findings": []
+    },
+    {
+      "id": "with-styled-components",
+      "moduleCount": 8,
+      "routeCount": 2,
+      "clientModuleCount": 7,
+      "unresolvedImports": 0,
+      "unresolvedRate": 0,
+      "diagnosticsPer100Modules": 37.5,
+      "rules": {
+        "ARCH001": 3,
+        "ARCH002": 0,
+        "ARCH003": 0,
+        "ARCH004": 0,
+        "ARCH005": 0
+      },
+      "findings": [
+        {
+          "ruleId": "ARCH001",
+          "severity": "warning",
+          "file": "app/about/page.tsx",
+          "line": 1,
+          "confidence": 0.95,
+          "message": "Potential unnecessary Client Component"
+        },
+        {
+          "ruleId": "ARCH001",
+          "severity": "warning",
+          "file": "app/page.tsx",
+          "line": 1,
+          "confidence": 0.95,
+          "message": "Potential unnecessary Client Component"
+        },
+        {
+          "ruleId": "ARCH001",
+          "severity": "warning",
+          "file": "lib/client-layout.tsx",
+          "line": 1,
+          "confidence": 0.95,
+          "message": "Potential unnecessary Client Component"
+        }
+      ]
+    },
+    {
+      "id": "image-component",
+      "moduleCount": 10,
+      "routeCount": 8,
+      "clientModuleCount": 0,
+      "unresolvedImports": 10,
+      "unresolvedRate": 1,
+      "diagnosticsPer100Modules": 0,
+      "rules": {
+        "ARCH001": 0,
+        "ARCH002": 0,
+        "ARCH003": 0,
+        "ARCH004": 0,
+        "ARCH005": 0
+      },
+      "findings": []
+    }
+  ]
+}

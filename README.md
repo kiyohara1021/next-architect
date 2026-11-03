@@ -16,11 +16,16 @@ Gates in CI: ARCH001–005 corpus FP runners, smoke, and a 1k-module perf gate. 
 
 ### What the "0 false positives" claim covers
 
-The FP gates run against **hand-written synthetic cases in this repo**, not real
-applications. ARCH001 and ARCH003 report zero false positives on cases we wrote
-ourselves, which is a regression guard — not evidence that the rules are quiet on
-real code. The OSS corpus that docs/10 asks for, and the human review pass that
-goes with it, have not been done. Treat the numbers accordingly until they are.
+The per-rule FP gates run against **hand-written synthetic cases in this repo**.
+ARCH001 and ARCH003 report zero false positives there, which is a regression
+guard — not evidence that the rules are quiet on real code.
+
+The OSS corpus ([`corpus/oss/`](corpus/oss/)) closes part of that gap: six pinned
+App Router examples from `vercel/next.js`, analyzed with their real dependencies
+installed. It measures **noise** — report density and unresolved-import rate.
+Whether each finding is a true or false positive is a human call, recorded in
+[`corpus/oss/REVIEW.md`](corpus/oss/REVIEW.md), and **no completed review pass
+exists yet**. Until one does, the FP numbers describe our own fixtures only.
 
 The same applies to `corpus:perf`: 1,000 generated modules with trivial bodies say
 little about a real project of that size.
@@ -30,7 +35,7 @@ Known gaps vs full v0.1 polish (intentionally deferred):
 - ARCH002 does not yet flag non-`NEXT_PUBLIC_` `process.env` as a strong server signal ([docs/05](docs/05-rules.md#arch002--client-boundary-pollution))
 - ARCH004 reports the exports the client graph uses, but not the `n of m` ratio in [docs/05](docs/05-rules.md#arch004--large-dependency-in-client-bundle) — the package's own export count needs a type-aware pass
 - Parser keeps a Program handle for API compat but does not run a type-aware bind for rules
-- No OSS / multi-app corpus or `corpus:diff` yet ([docs/10](docs/10-quality-strategy.md))
+- The OSS corpus has no completed human review pass ([docs/10](docs/10-quality-strategy.md)) — this blocks the v0.1 tag
 - MCP / HTML report / `fix` are later milestones ([docs/09](docs/09-roadmap.md))
 
 ## Install / Build / Test
@@ -71,6 +76,16 @@ pnpm corpus:arch005
 pnpm corpus:smoke     # end-to-end smoke fixtures
 pnpm corpus:perf      # 1k-module cold/warm timing (generates gitignored tree)
 pnpm corpus:all       # all of the above, sequentially
+```
+
+The OSS corpus is separate because it clones a third-party repository and
+installs its dependencies. It runs nightly rather than per pull request, so an
+upstream outage never fails an unrelated PR.
+
+```bash
+pnpm corpus:oss:fetch   # sparse checkout of pinned vercel/next.js examples + npm install
+pnpm corpus:oss         # report density / unresolved rate (add --update to rewrite the snapshot)
+pnpm corpus:diff        # compare against corpus/oss/snapshot.json
 ```
 
 ## Packages
