@@ -35,7 +35,7 @@ Known gaps vs full v0.1 polish (intentionally deferred):
 
 ## Install / Build / Test
 
-From the repo root (Node ≥ 20, pnpm 9):
+From the repo root (Node ≥ 22, pnpm 9):
 
 ```bash
 pnpm install
