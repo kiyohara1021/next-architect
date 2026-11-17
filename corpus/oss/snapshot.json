@@ -12,31 +12,15 @@
       "clientModuleCount": 15,
       "unresolvedImports": 0,
       "unresolvedRate": 0,
-      "diagnosticsPer100Modules": 7.14,
+      "diagnosticsPer100Modules": 2.38,
       "rules": {
         "ARCH001": 0,
         "ARCH002": 0,
         "ARCH003": 0,
-        "ARCH004": 3,
+        "ARCH004": 1,
         "ARCH005": 0
       },
       "findings": [
-        {
-          "ruleId": "ARCH004",
-          "severity": "info",
-          "file": "components/forgot-password-form.tsx",
-          "line": 3,
-          "confidence": 0.8,
-          "message": "Large dependency enters client bundle"
-        },
-        {
-          "ruleId": "ARCH004",
-          "severity": "info",
-          "file": "components/forgot-password-form.tsx",
-          "line": 4,
-          "confidence": 0.8,
-          "message": "Large dependency enters client bundle"
-        },
         {
           "ruleId": "ARCH004",
           "severity": "info",

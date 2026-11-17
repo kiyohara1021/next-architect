@@ -11,7 +11,7 @@ import {
   isTestOrStoriesPath,
 } from "@next-architect/core";
 
-const DEFAULT_MAX_KB = 100;
+const DEFAULT_MAX_KB = 50;
 const IGNORE_DEFAULT = new Set(["react", "react-dom", "next"]);
 
 interface Reached {
@@ -42,10 +42,10 @@ export const arch004: Rule = {
     exclusions: [
       "react, react-dom, next",
       "shakeable (barrel) paths — hidden unless --include-shakeable",
-      "packages whose unpacked size cannot be determined",
+      "packages whose size cannot be determined",
     ],
     falsePositiveNotes: [
-      "Size is approximate unpacked node_modules size, not minified/gzipped bundle size.",
+      "Size is the gzipped size of the package's published runtime files in node_modules. Those files are not minified or tree-shaken, so it is not the bundle size.",
       "Used exports are the names the client graph imports; the package's own export count is not resolved, so no ratio is shown.",
     ],
   },
@@ -210,7 +210,7 @@ export const arch004: Rule = {
               line: hit.entryEdge.loc.line,
               column: hit.entryEdge.loc.column,
               message: "Large dependency enters client bundle",
-              explanation: `Estimated unpacked size: ~${kb} KB (approximate; see notes)\n  sizeSource: unpacked${usedLine}${entriesLine}\n\n  Consider:\n    - import the specific submodule directly\n    - next/dynamic with { ssr: false }\n    - move the processing to a Server Component`,
+              explanation: `Estimated gzipped size: ~${kb} KB (approximate; see notes)\n  sizeSource: gzip${usedLine}${entriesLine}\n\n  Consider:\n    - import the specific submodule directly\n    - next/dynamic with { ssr: false }\n    - move the processing to a Server Component`,
               suggestion:
                 "Prefer a lighter import path or load the dependency only on the server when possible. For exact sizes use @next/bundle-analyzer.",
               confidence: computeConfidence(arch004.baseConfidence, {
@@ -220,7 +220,7 @@ export const arch004: Rule = {
                 isDtsOrGenerated: isDtsOrGeneratedPath(root.id),
               }),
               sizeBytes,
-              sizeSource: "unpacked",
+              sizeSource: "gzip",
               ...(usedExports.length > 0 ? { usedExports } : {}),
               path: {
                 nodes: hit.pathIds.map((id) => {
