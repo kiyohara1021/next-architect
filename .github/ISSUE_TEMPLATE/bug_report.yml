@@ -1,0 +1,36 @@
+name: Bug or false positive / 不具合・誤検知
+description: Report a crash, wrong result, or false positive / クラッシュ・誤った結果・誤検知を報告する
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: input
+    id: rule
+    attributes:
+      label: Rule ID (if any) / ルールID
+      placeholder: ARCH001
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened and what did you expect? / 起きたことと期待した結果
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction / 最小の再現
+      description: A minimal fixture or public repository. Do not paste private code. / 最小のフィクスチャか公開リポジトリ。非公開のコードは貼らないでください。
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: next-architect commit, Next.js version, Node.js version / 各バージョン
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist / 確認
+      options:
+        - label: I searched existing issues. / 既存Issueを検索しました。
+          required: true

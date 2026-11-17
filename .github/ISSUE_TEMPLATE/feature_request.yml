@@ -1,0 +1,25 @@
+name: Feature or rule request / 機能・ルールの提案
+description: Suggest a new rule or improvement / 新しいルールや改善を提案する
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Architecture problem to detect / 検出したい構造上の問題
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior / 提案する挙動
+      description: Include examples that should and should not be reported. / 報告すべき例と、報告すべきでない例を含めてください。
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist / 確認
+      options:
+        - label: I searched existing issues. / 既存Issueを検索しました。
+          required: true
