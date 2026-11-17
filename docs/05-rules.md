@@ -182,7 +182,7 @@ components/Chart.tsx:3
         ↓ import { Chart } from "huge-library"
   huge-library
 
-  Estimated unpacked size: ~428 KB   (approximate; see notes)
+  Estimated gzipped size: ~120 KB   (approximate; see notes)
   Used exports: Chart
 
   Consider:
@@ -195,9 +195,10 @@ components/Chart.tsx:3
 
 ### サイズ推定の但し書き（必須）
 
-- `node_modules` の実ファイルサイズであり、**バンドル後・minify 後・gzip 後のサイズではない**
+- `node_modules` にある、パッケージの実行時ファイル（型定義・ソースマップ・ドキュメント・別形式のビルドを除く）を **gzip したサイズ**であり、**バンドル後・minify 後のサイズではない**（公開ファイルは minify されていないことが多く、実際のバンドル後サイズより大きく出る）
+- 既定のしきい値は 50 KB（gzip）。unpacked size は `tailwind-merge`（約 210 KB だが実際は約 7 KB）のような誤検知を避けられないため使わない
 - tree-shaking の結果を反映しない
-- 出力に必ず `approximate` と明記し、`--format json` では `sizeBytes` に加えて `sizeSource: "unpacked"` を持たせる
+- 出力に必ず `approximate` と明記し、`--format json` では `sizeBytes` に加えて `sizeSource: "gzip"` を持たせる
 
 ### 使用 export の表示（v0.1 は「使っている名前」のみ）
 

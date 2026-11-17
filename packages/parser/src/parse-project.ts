@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
+import zlib from "node:zlib";
 import ts from "typescript";
 import type { Limitation } from "@next-architect/core";
 import {
@@ -285,7 +286,7 @@ function estimatePackageSize(
     );
     if (!fs.existsSync(pkgJsonPath)) return undefined;
     const pkgDir = path.dirname(pkgJsonPath);
-    return packageRuntimeSize(pkgDir, 0);
+    return packageRuntimeSize(pkgDir);
   } catch {
     return undefined;
   }
@@ -323,46 +324,69 @@ const SKIP_PACKAGE_DIRS = new Set([
 const MAX_PACKAGE_SCAN_DEPTH = 6;
 
 /**
- * Approximate unpacked size of the code a bundler could pull from a package.
+ * Approximate gzipped size of the code a bundler could pull from a package.
  *
- * This used to reuse SKIP_DIRS — the set written for walking a user's project,
- * which excludes `dist`. It therefore skipped the published build entirely and
- * measured the TypeScript sources sitting beside it, so the sizes ARCH004
- * reported described the wrong files (corpus/oss/REVIEW.md, D4).
+ * Unpacked size cannot carry ARCH004: `tailwind-merge` is 210 KB unpacked but
+ * about 7 KB gzipped (corpus/oss/REVIEW.md, D5). The runtime files are
+ * therefore compressed, in chunks of ~1 MB so a package with thousands of tiny
+ * files (`lucide-react`) neither holds everything in memory nor pays the
+ * per-file gzip overhead.
  *
- * Still an over-estimate: CJS and ESM builds are counted together and
- * tree-shaking is invisible here. docs/05 requires the output to say so.
+ * The file selection still skips SKIP_PACKAGE_DIRS / NON_RUNTIME_FILE /
+ * DUPLICATE_BUILD (the old SKIP_DIRS reuse skipped `dist` and measured the
+ * wrong files, D4). It remains an over-estimate: CJS and ESM builds are both
+ * counted and tree-shaking is invisible here. docs/05 requires the output to
+ * say so.
  */
-function packageRuntimeSize(dir: string, depth: number): number {
-  if (depth > MAX_PACKAGE_SCAN_DEPTH) return 0;
+const GZIP_CHUNK_BYTES = 1024 * 1024;
+
+function packageRuntimeSize(dir: string): number {
   let total = 0;
-  let entries: fs.Dirent[];
-  try {
-    entries = fs.readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return 0;
-  }
-  for (const entry of entries) {
-    if (entry.name.startsWith(".")) continue;
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (
-        SKIP_PACKAGE_DIRS.has(entry.name) ||
-        DUPLICATE_BUILD.test(entry.name)
-      ) {
-        continue;
-      }
-      total += packageRuntimeSize(full, depth + 1);
-    } else if (entry.isFile()) {
-      if (NON_RUNTIME_FILE.test(entry.name)) continue;
-      if (DUPLICATE_BUILD.test(entry.name)) continue;
-      try {
-        total += fs.statSync(full).size;
-      } catch {
-        // ignore
+  let pending: Buffer[] = [];
+  let pendingBytes = 0;
+  const flush = (): void => {
+    if (pendingBytes === 0) return;
+    total += zlib.gzipSync(Buffer.concat(pending), { level: 6 }).length;
+    pending = [];
+    pendingBytes = 0;
+  };
+  const walk = (current: string, depth: number): void => {
+    if (depth > MAX_PACKAGE_SCAN_DEPTH) return;
+    let entries: fs.Dirent[];
+    try {
+      entries = fs.readdirSync(current, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    // Sorted so the chunking, and therefore the size, is deterministic.
+    entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+    for (const entry of entries) {
+      if (entry.name.startsWith(".")) continue;
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        if (
+          SKIP_PACKAGE_DIRS.has(entry.name) ||
+          DUPLICATE_BUILD.test(entry.name)
+        ) {
+          continue;
+        }
+        walk(full, depth + 1);
+      } else if (entry.isFile()) {
+        if (NON_RUNTIME_FILE.test(entry.name)) continue;
+        if (DUPLICATE_BUILD.test(entry.name)) continue;
+        try {
+          const data = fs.readFileSync(full);
+          pending.push(data);
+          pendingBytes += data.length;
+          if (pendingBytes >= GZIP_CHUNK_BYTES) flush();
+        } catch {
+          // ignore
+        }
       }
     }
-  }
+  };
+  walk(dir, 0);
+  flush();
   return total;
 }
 

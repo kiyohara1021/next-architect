@@ -29,9 +29,11 @@ exists yet**. Until one does, the FP numbers describe our own fixtures only.
 
 The corpus found four defects on its first run — including three ARCH001 false
 positives on Next.js's own example code. Those are fixed and guarded by
-fixtures. It still fails its own density gate (6.6 findings per 100 modules
-against a limit of 5), and the remaining noise is ARCH004's unpacked-size
-proxy; see D5 in the review log.
+fixtures. ARCH004 estimates a package's size from the gzipped bytes of its
+published runtime files, which brought the corpus under its density gate (4.7
+findings per 100 modules against a limit of 5). That threshold was tuned on six
+packages and is not yet validated more widely; see D5 and the third pass in the
+review log.
 
 The same applies to `corpus:perf`: 1,000 generated modules with trivial bodies say
 little about a real project of that size.

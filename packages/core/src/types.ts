@@ -201,10 +201,10 @@ export interface Diagnostic {
   path?: DiagnosticPath;
   fix?: Fix;
   suppressed?: "config" | "inline" | "below-threshold";
-  /** Approximate unpacked size of the reported package (docs/05 ARCH004). */
+  /** Approximate gzipped size of the reported package's runtime files (docs/05 ARCH004). */
   sizeBytes?: number;
-  /** Always "unpacked" — never bundled/minified/gzipped size. */
-  sizeSource?: "unpacked";
+  /** Always "gzip": the published runtime files compressed, never a bundled/minified size. */
+  sizeSource?: "gzip";
   /** Named exports the client graph actually pulls from the package. */
   usedExports?: string[];
 }

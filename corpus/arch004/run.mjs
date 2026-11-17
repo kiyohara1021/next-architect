@@ -7,11 +7,13 @@
  * manifest expectations, and fails on false positives for should-not-report.
  *
  * Vendor packages are materialized under each case's node_modules/ at runtime
- * (gitignored) so size estimation can see real unpacked bytes.
+ * (gitignored) so size estimation can see real bytes. The padding is incompressible,
+ * because the estimate is gzipped size.
  *
  * Usage: pnpm corpus:arch004
  */
 import fs from "node:fs";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { runCheck } from "../../packages/cli/dist/check.js";
@@ -56,13 +58,15 @@ function ensureVendorPackage(caseRoot, name, opts) {
     path.join(pkgDir, "index.js"),
     `exports.${opts.exportName} = function ${opts.exportName}() { return null; };\n`,
   );
+  // Deterministic and incompressible: a run of one byte would gzip to ~nothing.
   const padPath = path.join(pkgDir, "padding.bin");
-  if (
-    !fs.existsSync(padPath) ||
-    fs.statSync(padPath).size !== opts.paddingBytes
-  ) {
-    fs.writeFileSync(padPath, Buffer.alloc(opts.paddingBytes, 0x61));
+  const padding = Buffer.alloc(opts.paddingBytes);
+  let block = createHash("sha256").update(name).digest();
+  for (let i = 0; i < padding.length; i += block.length) {
+    block.copy(padding, i, 0, Math.min(block.length, padding.length - i));
+    block = createHash("sha256").update(block).digest();
   }
+  fs.writeFileSync(padPath, padding);
 }
 
 /**
@@ -70,7 +74,7 @@ function ensureVendorPackage(caseRoot, name, opts) {
  * @param {string} caseId
  */
 function ensureCaseVendors(caseRoot, caseId) {
-  // Huge lib (~120KB) for TP + server-only TN cases
+  // Huge lib (~120KB, incompressible) for TP + server-only TN cases
   if (
     caseId === "large-client-dep" ||
     caseId === "server-large-dep" ||

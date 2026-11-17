@@ -29,6 +29,36 @@ false positives.
 
 ## Passes
 
+### 2026-11-18 — third pass, after D5 (Claude, **pending human confirmation**)
+
+Corpus unchanged (`vercel/next.js@dd76599c`). 7 findings → **5**. ARCH004 now
+measures the **gzipped size of a package's published runtime files**, with a
+50 KB default threshold, instead of unpacked size (#77).
+
+Measured gzipped sizes of every ARCH004 candidate in the corpus:
+
+| Package | Gzipped | Verdict (from the second pass) | Reported now |
+| --- | --- | --- | --- |
+| `lucide-react` | 354 KB | **TP** | yes |
+| `styled-components` | 99 KB | **TP** | yes |
+| `fuse.js` | 59 KB | **TP** | yes |
+| `tailwind-merge` | 40 KB | **FP** | no |
+| `@supabase/ssr` | 27 KB | **weak** | no |
+| `@stripe/react-stripe-js` | 17 KB | noise | no |
+
+Report density **4.72 / 100 modules** (limit 5); unresolved 1.9% (limit 2%). The
+OSS corpus gate passes. ARCH001 / ARCH003 / ARCH005 FP = 0 (unchanged).
+ARCH004: 3 findings, all TP, FP rate 0/3.
+
+Caveats, so this is not read as more than it is:
+
+- The published files are **not minified**, so gzipped size still overstates the
+  real bundle (`tailwind-merge` is ~7 KB minified+gzipped, 40 KB here). The 50 KB
+  threshold was chosen so that it separates the six packages above; with six
+  data points it is a fit to this corpus, not a validated constant.
+- CJS and ESM builds are still both counted.
+- `maxSizeKb` in the rule options now means gzipped KB.
+
 ### 2026-08-17 — second pass, after the D1–D4 fixes (Claude, **pending human confirmation**)
 
 Corpus unchanged (`vercel/next.js@dd76599c`). 26 findings → **7**.
@@ -60,7 +90,7 @@ between the corpus and a green run.
 | D3 — asset imports counted as unresolved | fixed | `corpus/arch001/cases/asset-import` |
 | D4 — ARCH004 granularity and size | partly fixed | per-package dedupe + real package sizes; see D5 |
 
-#### D5 — unpacked size cannot carry ARCH004 (open)
+#### D5 — unpacked size cannot carry ARCH004 (resolved on 2026-11-18, see the third pass)
 
 Fixing D4 exposed a measurement bug underneath it: the size walk reused the
 skip-list written for scanning a user's project, which excludes `dist/`. It had
