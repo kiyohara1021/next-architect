@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@next-architect/core": "workspace:*",
-    "typescript": "^5.8.2"
+    "typescript": "^7.0.2"
   },
   "license": "MIT"
 }
