@@ -11,6 +11,14 @@ updates:
       time: "09:00"
       timezone: Asia/Tokyo
     open-pull-requests-limit: 5
+    ignore:
+      # 対応する最も古い Node.js（engines: >=22）に型定義を合わせる
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # TypeScript 7 は JavaScript から使う Compiler API（ts.isIdentifier など）を提供しない。
+      # packages/parser がこの API に依存しているため、6.x までに留める
+      - dependency-name: "typescript"
+        versions: [">=7"]
     groups:
       minor-and-patch:
         update-types:
