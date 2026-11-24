@@ -51,7 +51,16 @@ export interface ResolveResult {
  * `.json` is deliberately absent — TypeScript resolves it.
  */
 const ASSET_EXTENSION =
-  /\.(css|scss|sass|less|styl|png|jpe?g|gif|svg|webp|avif|ico|bmp|woff2?|ttf|otf|eot|mp[34]|webm|ogg|wav|pdf|txt|md|glb|gltf)(\?.*)?$/i;
+  /\.(css|scss|sass|less|styl|png|jpe?g|gif|svg|webp|avif|ico|bmp|woff2?|ttf|otf|eot|mp[34]|webm|ogg|wav|pdf|txt|md|glb|gltf)$/i;
+
+/** Whether a specifier names an asset, ignoring any `?query` suffix. */
+function isAssetSpecifier(specifier: string): boolean {
+  // Strip the query with indexOf rather than inside the regex: an optional
+  // `(\?.*)?$` group runs in polynomial time on specifiers with many "?".
+  const query = specifier.indexOf("?");
+  const bare = query === -1 ? specifier : specifier.slice(0, query);
+  return ASSET_EXTENSION.test(bare);
+}
 
 const SKIP_DIRS = new Set([
   "node_modules",
@@ -177,7 +186,7 @@ export function parseProject(
     // as unresolved is not cosmetic: ARCH001 stays silent on any path with an
     // unresolved import, so `import "./globals.css"` in a layout would disable
     // the rule for every module below it.
-    if (ASSET_EXTENSION.test(specifier)) {
+    if (isAssetSpecifier(specifier)) {
       return {
         unresolved: false,
         isExternal: true,

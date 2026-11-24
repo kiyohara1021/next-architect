@@ -12,6 +12,9 @@ concurrency:
   group: corpus-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   gates:
     runs-on: ubuntu-latest

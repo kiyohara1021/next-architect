@@ -15,6 +15,9 @@ concurrency:
   group: oss-corpus
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   corpus:
     runs-on: ubuntu-latest
