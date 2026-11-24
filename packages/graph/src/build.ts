@@ -793,9 +793,27 @@ function readIfSmall(filePath: string): string | null {
 /** A directive is only a directive in the prologue, before any real code. */
 function hasUseClientDirective(content: string): boolean {
   const prologue = content.slice(0, 2000);
-  return /^\s*(?:(?:\/\/[^\n]*|\/\*[\s\S]*?\*\/)\s*)*["']use client["']/.test(
-    prologue,
-  );
+  // Skip whitespace and comments with a linear scan. A single regex with
+  // nested repetition here backtracks exponentially on inputs like "//"
+  // repeated many times.
+  let i = 0;
+  while (i < prologue.length) {
+    const ch = prologue[i]!;
+    if (/\s/.test(ch)) {
+      i++;
+    } else if (prologue.startsWith("//", i)) {
+      const end = prologue.indexOf("\n", i + 2);
+      if (end === -1) return false;
+      i = end + 1;
+    } else if (prologue.startsWith("/*", i)) {
+      const end = prologue.indexOf("*/", i + 2);
+      if (end === -1) return false;
+      i = end + 2;
+    } else {
+      break;
+    }
+  }
+  return /^["']use client["']/.test(prologue.slice(i));
 }
 
 /**
